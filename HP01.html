@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngân Hàng Câu Hỏi - Trắc Nghiệm HP1</title>
+    <!-- Tích hợp Tailwind CSS để xử lý UI/UX Responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Hiệu ứng tương tác cho đáp án */
+        .option-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .option-btn:hover:not(.answered) { 
+            border-color: #93c5fd; 
+            background-color: #f8fafc; 
+            transform: translateX(4px);
+        }
+        
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden selection:bg-blue-200">
+
+    <!-- Sidebar Menu (Desktop & Mobile) -->
+    <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex-col h-full shadow-lg z-30 absolute md:relative md:flex hidden transition-transform duration-300">
+        <div class="p-5 border-b border-blue-700 flex items-center justify-between md:justify-center bg-blue-600 text-white">
+            <h1 class="text-xl font-bold tracking-wide flex items-center"><i class="fas fa-graduation-cap mr-3 text-2xl"></i> ÔN TẬP HP1</h1>
+            <button id="close-menu-btn" class="md:hidden text-white hover:text-blue-200 focus:outline-none p-1">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-1.5" id="lesson-list">
+            <!-- Danh sách bài học load động -->
+        </div>
+    </aside>
+
+    <!-- Menu Overlay cho Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden transition-opacity"></div>
+
+    <!-- Khu vực làm bài chính -->
+    <main class="flex-1 flex flex-col h-full relative w-full">
+        <!-- Header Thanh trạng thái -->
+        <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex justify-between items-center shadow-sm z-10 sticky top-0">
+            <div class="flex items-center gap-3 w-1/2 md:w-2/3">
+                <button id="menu-btn" class="md:hidden text-slate-500 hover:text-blue-600 focus:outline-none flex-shrink-0 p-1">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+                <h2 class="text-sm md:text-lg font-bold text-slate-700 truncate" id="current-lesson-title">Đang phân tích dữ liệu...</h2>
+            </div>
+            
+            <!-- Bảng điểm thời gian thực -->
+            <div class="flex items-center gap-2 md:gap-4 flex-shrink-0 justify-end">
+                <div class="bg-green-50 text-green-700 px-3 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-bold border border-green-200 shadow-sm flex items-center" id="score-display">
+                    <i class="fas fa-check-double mr-2"></i> Đúng: 0 / 0
+                </div>
+                <div class="bg-blue-50 text-blue-700 px-3 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-bold border border-blue-200 shadow-sm hidden sm:flex items-center" id="question-count">
+                    <i class="fas fa-list-ol mr-2"></i> 0 Câu
+                </div>
+            </div>
+        </header>
+
+        <!-- Container chứa câu hỏi -->
+        <div class="flex-1 overflow-y-auto p-3 md:p-8 scroll-smooth bg-slate-50/50" id="quiz-container">
+            <div class="flex items-center justify-center h-full text-blue-500 flex-col">
+                <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
+                <span class="font-medium text-slate-500">Đang khởi tạo ngân hàng câu hỏi...</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- DỮ LIỆU CÂU HỎI -->
+    <textarea id="raw-data" class="hidden">
+BÀI 1: ĐỐI TƯỢNG, NHIỆM VỤ, PHƯƠNG PHÁP NGHIÊN CỨU MÔN HỌC
+Câu 1: Nội dung chương trình giáo dục quốc phòng và an ninh Học phần I là:
+A. Đường lối quốc phòng và an ninh của Đảng Cộng sản Việt Nam.
+B. Đường lối cách mạng của Đảng Cộng sản Việt Nam.
+C. Đường lối quốc phòng, an ninh của Đảng Cộng sản Việt Nam.
+D. Đường lối chiến lược quân sự của Đảng Cộng sản Việt Nam.
+Câu 2: Nội dung chương trình giáo dục quốc phòng và an ninh Học phần II là:
+A. Công tác xây dựng khu vực phòng thủ.
+B. Công tác quốc phòng và an ninh.
+C. Công tác xây dựng nền quốc phòng, an ninh.
+D. Công tác xây dựng thế trận chiến tranh nhân dân.
+Câu 3: Đối tượng được miễn học môn học giáo dục quốc phòng và an ninh là:
+A. Sinh viên đã hoàn thành nghĩa vụ quân sự.
+B. Sinh viên bị ốm đau, tai nạn đang điều trị tại bệnh viện.
+C. Sinh viên là tu sỹ.
+D. Sinh viên có giấy chứng nhận sỹ quan dự bị hoặc bằng tốt nghiệp do các trường quân đội, công an cấp.
+Câu 4: Phương pháp được sử dụng để nghiên cứu giáo dục quốc phòng và an ninh:
+A. Phương pháp nghiên cứu lý thuyết.
+B. Phương pháp nghiên cứu tổng hợp.
+C. Phương pháp nghiên cứu xã hội.
+D. Phương pháp nghiên cứu giả thuyết.
+Câu 5: Đối tượng được tạm hoãn môn học giáo dục quốc phòng và an ninh là:
+A. Sinh viên là dân quân, có giấy xác nhận của địa phương.
+B. Sinh viên là nữ mang thai hoặc trong thời gian nghỉ chế độ thai sản theo quy định hiện hành.
+C. Sinh viên là tự vệ, có giấy xác nhận của cơ quan.
+D. Sinh viên đã tham gia nghĩa vụ quân sự.
+Câu 6: Đối tượng được miễn học các nội dung thực hành kỹ năng quân sự:
+A. Sinh viên vì lý do sức khỏe phải dừng học trong thời gian dài để điều trị.
+B. Sinh viên bị ốm đau, tai nạn.
+C. Sinh viên là người nước ngoài.
+D. Sinh viên đã hoàn thành nghĩa vụ quân sự, công an nhân dân.
+BÀI 2: QUAN ĐIỂM CƠ BẢN CỦA CHỦ NGHĨA MÁC- LÊNIN, TƯ TƯỞNG HỒ CHÍ MINH VỀ CHIẾN TRANH, QUÂN ĐỘI VÀ BẢO VỆ TỔ QUỐC
+Câu 1: Quan điểm của chủ nghĩa Mác - Lênin về chiến tranh:
+A. Chiến tranh là một hiện tượng chính trị xã hội có tính lịch sử.
+B. Chiến tranh là những cuộc xung đột tự phát ngẫu nhiên.
+C. Chiến tranh là một hiện tượng xã hội mang tính vĩnh viễn.
+D. Chiến tranh là những xung đột do mâu thuẫn không mang tính xã hội.
+Câu 2: Quan điểm của chủ nghĩa Mác - Lênin về quan hệ giữa chiến tranh với chính trị:
+A. Chính trị là con đường, là phương tiện của chiến tranh.
+B. Chính trị là một thời đoạn, một bộ phận của chiến tranh.
+C. Chính trị chi phối và quyết định toàn bộ tiến trình và kết cục của chiến tranh.
+D. Chính trị không thể sử dụng kết quả sau chiến tranh để đề ra nhiệm vụ, mục tiêu mới cho giai cấp.
+Câu 3: Hồ Chí Minh khẳng định mục đích cuộc chiến tranh của dân ta chống thực dân Pháp xâm lược là:
+A. Bảo vệ nhân dân, bảo vệ chế độ, bảo vệ Tổ quốc.
+B. Bảo vệ đất nước và chống ách đô hộ của thực dân, đế quốc.
+C. Bảo vệ tính mạng, tài sản của nhân dân, của chế độ XHCN.
+D. Bảo vệ độc lập dân tộc, chủ quyền quốc gia và thống nhất đất nước.
+Câu 4: Theo tư tưởng Hồ Chí Minh nhất thiết phải sử dụng bạo lực cách mạng để:
+A. Có thể ngoại giao trên thế mạnh.
+B. Xây dựng chế độ mới.
+C. Giành chính quyền và giữ chính quyền.
+D. Lật đổ chế độ cũ.
+Câu 5: Quan điểm chủ nghĩa Mác - Lênin về bản chất giai cấp của quân đội:
+A. Mang bản chất của giai cấp bóc lột.
+B. Mang bản chất của nhân dân lao động.
+C. Mang bản chất giai cấp của nhà nước đã tổ chức, nuôi dưỡng và sử dụng quân đội đó.
+D. Mang bản chất của dân tộc sử dụng quân đội đó.
+Câu 6: Nguyên tắc cơ bản và quan trọng nhất về xây dựng quân đội kiểu mới của V. I. Lênin:
+A. Sự lãnh đạo của Đảng cộng sản đối với quân đội.
+B. Giữ vững quan điểm giai cấp trong xây dựng quân đội.
+C. Tính kỷ luật cao là yếu tố quyết định sức mạnh quân đội.
+D. Quân đội chính quy, hiện đại, trung thành với giai cấp công nhân và nhân dân lao động.
+Câu 7: V. I. Lênin xác định nguyên tắc đoàn kết quân dân trong xây dựng quân đội:
+A. Sự đoàn kết gắn bó nhất trí Hồng quân với nhân dân lao động.
+B. Sự nhất trí quân dân và các lực lượng tiến bộ trên toàn thế giới.
+C. Sự đoàn kết thống nhất quân đội với nhân dân.
+D. Sự nhất trí quân dân và các lực lượng vũ trang.
+Câu 8: Chủ tịch Hồ Chí Minh khẳng định sự ra đời của quân đội ta:
+A. Là một tất yếu có tính quy luật trong đấu tranh giai cấp, đấu tranh dân tộc ở Việt Nam.
+B. Là một hiện tượng ngẫu nhiên trong quá trình cách mạng Việt Nam.
+C. Là một sự kế thừa trong lịch sử chống giặc ngoại xâm.
+D. Là một hiện tượng tự phát do đòi hỏi của chiến tranh cách mạng.
+Câu 9: Theo tư tưởng Hồ Chí Minh, Quân đội nhân dân Việt Nam:
+A. Mang bản chất nông dân.
+B. Mang bản chất giai cấp công - nông do Đảng lãnh đạo.
+C. Mang bản chất giai cấp công nhân.
+D. Mang bản chất nhân dân lao động Việt Nam.
+Câu 10: Quân đội ta mang bản chất giai cấp công nhân đồng thời có:
+A. Tính quần chúng sâu sắc.
+B. Tính phong phú đa dạng.
+C. Tính nhân dân, tính dân tộc sâu sắc.
+D. Tính phổ biến, rộng rãi.
+Câu 11: Theo tư tưởng Hồ Chí Minh, quân đội nhân dân Việt Nam có chức năng:
+A. Chiến đấu, sẵn sàng chiến đấu.
+B. Chiến đấu, lao động sản xuất, tuyên truyền.
+C. Chiến đấu, công tác, lao động sản xuất.
+D. Chiến đấu và tham gia giữ gìn hòa bình khu vực.
+Câu 12: Theo tư tưởng Hồ Chí Minh, quân đội nhân dân Việt Nam có nhiệm vụ:
+A. Tiến hành phổ biến chính sách của Đảng, Nhà nước cho nhân dân.
+B. Giúp nhân dân cải thiện đời sống.
+C. Thiết thực tham gia lao động sản xuất góp phần xây dựng chủ nghĩa xã hội.
+D. Làm nòng cốt phát triển kinh tế tại nơi đóng quân.
+Câu 13: Nội dung về lý luận bảo vệ Tổ quốc XHCN của V. I. Lênin là:
+A. Bảo vệ Tổ quốc XHCN là nhiệm vụ thường xuyên.
+B. Bảo vệ Tổ quốc XHCN là một tất yếu khách quan.
+C. Bảo vệ Tổ quốc XHCN là cấp thiết trước mắt.
+D. Bảo vệ Tổ quốc XHCN là nhiệm vụ thường xuyên của toàn dân.
+Câu 14: Theo quan điểm Chủ nghĩa Mác - Lênin để bảo vệ Tổ quốc xã hội chủ nghĩa phải:
+A. Tăng cường quân thường trực gắn với phát triển kinh tế xã hội.
+B. Tăng cường thế trận gắn với thực hiện chính sách đãi ngộ.
+C. Tăng cường tiềm lực quốc phòng gắn với phát triển kinh tế xã hội.
+D. Tăng cường tiềm lực an ninh gắn với hợp tác quốc tế.
+Câu 15: Chủ tịch Hồ Chí Minh khẳng định: “Phải dùng … cách mạng chống lại bạo lực phản cách mạng, giành lấy chính quyền và bảo vệ chính quyền”.
+A. Sức mạnh.
+B. Lực lượng.
+C. Bạo lực.
+D. Quân đội.
+Câu 16: Nguyên lý cơ bản của chủ nghĩa Mác - Lênin về bảo vệ Tổ quốc xã hội chủ nghĩa là: 
+A. Quần chúng nhân dân lãnh đạo mọi mặt sự nghiệp bảo vệ Tổ quốc xã hội chủ nghĩa.
+B. Đảng cộng sản lãnh đạo mọi mặt sự nghiệp bảo vệ Tổ quốc xã hội chủ nghĩa. 
+C. Lực lượng vũ trang lãnh đạo mọi mặt sự nghiệp bảo vệ Tổ quốc xã hội chủ nghĩa.
+D. Nhà nước lãnh đạo sự nghiệp bảo vệ Tổ quốc xã hội chủ nghĩa. 
+Câu 17: Sự nghiệp bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa đặt dưới sự lãnh đạo của:
+A. Các đoàn thể, các tổ chức chính trị xã hội. 
+B. Quần chúng nhân dân.
+C. Đảng Cộng sản Việt Nam. 
+D. Hệ thống chính trị.
+Câu 18: Chủ tịch Hồ Chí Minh xác định vai trò của Đảng trong sự nghiệp bảo vệ Tổ quốc xã hội chủ nghĩa:
+A. Đảng Cộng sản Việt Nam chỉ huy trực tiếp sự nghiệp bảo vệ Tổ quốc.
+B. Đảng Cộng sản Việt Nam trực tiếp chiến đấu trong sự nghiệp bảo vệ Tổ quốc. 
+C. Đảng Cộng sản Việt Nam kêu gọi mọi tầng lớp nhân dân đứng lên bảo vệ đất nước.
+D. Đảng Cộng sản Việt Nam lãnh đạo sự nghiệp bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa. 
+Câu 19: Sức mạnh bảo vệ Tổ quốc xã hội chủ nghĩa theo tư tưởng Hồ Chí Minh:
+A. Là sức mạnh của nền quốc phòng toàn dân, an ninh nhân dân.
+B. Là sức mạnh tổng hợp, kết hợp sức mạnh dân tộc với sức mạnh thời đại.
+C. Là sức mạnh của toàn dân, toàn quân. 
+D. Là sức mạnh của lực lượng vũ trang nhân dân, sức mạnh chính trị tinh thần.
+Câu 20: Chủ tịch Hồ Chí Minh xác định nghĩa vụ, trách nhiệm của công dân về bảo vệ Tổ quốc:
+A. Là nghĩa vụ số một, là trách nhiệm đầu tiên của mọi công dân.
+B. Là sẵn sàng hy sinh vì Tổ quốc.
+C. Là nghĩa vụ thiêng liêng, là trách nhiệm của mọi công dân Việt Nam.
+D. Là nghĩa vụ của mọi công dân.
+Câu 21: Tư tưởng Hồ Chí Minh về mục tiêu bảo vệ Tổ quốc là:
+A. Độc lập - Tự do - Hạnh phúc.
+B. Độc lập dân tộc, dân chủ và giàu mạnh.
+C. Độc lập dân tộc và chủ nghĩa xã hội.
+D. Dân giàu nước mạnh, xã hội công bằng dân chủ văn minh.
+Câu 22: Khẳng định nào sau đây là sai?
+A. Chiến tranh chỉ mất đi khi những điều kiện sinh ra nó không còn nữa.
+B. Còn chế độ tư hữu là chiến tranh còn tồn tại.
+C. Chiến tranh là một hiện tượng vĩnh viễn.
+D. Có đối kháng giai cấp tất yếu sẽ có chiến tranh.
+Câu 23: Chiến tranh là sự tiếp tục chính trị bằng biện pháp nào?
+A. Đàm phán.
+B. Quân đội.
+C. Bạo loạn.
+D. Bạo lực.
+Câu 24: Quan điểm của chủ nghĩa Mác - Lênin khẳng định chiến tranh xuất hiện từ khi:
+A. Xuất hiện và tồn tại mâu thuẫn giữa các tập đoàn người.
+B. Xuất hiện chế độ chiếm hữu tư nhân về tư liệu sản xuất.
+C. Loài người xuất hiện mâu thuẫn trong quá trình sản xuất.
+D. Thế giới xuất hiện các tôn giáo và mâu thuẫn trong xã hội.
+Câu 25: Nguồn gốc sâu xa nảy sinh chiến tranh theo quan điểm chủ nghĩa Mác - Lênin là:
+A. Nguồn gốc xã hội.
+B. Nguồn gốc chính trị - xã hội.
+C. Nguồn gốc kinh tế.
+D. Nguồn gốc chính trị.
+Câu 26: Nội dung nào sau đây là một trong những nguyên tắc cơ bản về xây dựng quân đội kiểu mới của Lênin?
+A. Đảng cộng sản lãnh đạo Hồng quân tăng cường bản chất giai cấp công nhân.
+B. Giữ vững quan điểm giai cấp trong xây dựng quân đội Xô viết.
+C. Tính kỷ luật cao là yếu tố quyết định sức mạnh của Hồng quân.
+D. Quân đội chính quy, hiện đại, trung thành với giai cấp lãnh đạo.
+Câu 27: Quan điểm chủ nghĩa Mác - Lênin về nguồn gốc trực tiếp nảy sinh chiến tranh là:
+A. Nguồn gốc giai cấp.
+B. Nguồn gốc mâu thuẫn.
+C. Nguồn gốc chính trị.
+D. Nguồn gốc xã hội.
+Câu 28: Tư tưởng Hồ Chí Minh xác định bảo vệ Tổ quốc là:
+A. Nghĩa vụ và trách nhiệm cao cả của công dân.
+B. Nghĩa vụ và trách nhiệm của mọi công dân.
+C. Trách nhiệm và nghĩa vụ của mỗi công dân.
+D. Trách nhiệm và quyền lợi của mọi công dân.
+Câu 29: Theo quan điểm của chủ nghĩa Mác - Lênin, bản chất của chiến tranh là:
+A. Kế tục mục tiêu chính trị bằng nhiều thủ đoạn.
+B. Thủ đoạn để đạt được mục tiêu chính trị.
+C. Sự tiếp tục của chính trị bằng biện pháp bạo lực.
+D. Biện pháp bạo lực gắn liền với thủ đoạn chính trị.
+Câu 30: Quan điểm của chủ nghĩa Mác - Lênin khẳng định một trong những nguồn gốc xuất hiện và tồn tại của chiến tranh là:
+A. Sự xuất hiện và tồn tại của các tôn giáo.
+B. Sự xuất hiện và tồn tại của giai cấp và đối kháng giai cấp.
+C. Sự xuất hiện và tồn tại mâu thuẫn của các tập đoàn người.
+D. Sự xuất hiện và tồn tại mâu thuẫn giữa các dân tộc.
+BÀI 3: ĐƯỜNG LỐI QUỐC PHÒNG VÀ AN NINH CỦA ĐẢNG CỘNG SẢN VIỆT NAM
+Câu 1: Tiềm lực kinh tế của nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Tập trung xây dựng lĩnh vực công nghiệp quốc phòng.
+B. Khả năng về kinh tế của đất nước có thể khai thác, huy động nhằm phục vụ cho quốc phòng, an ninh.
+C. Tăng cường phân bổ ngân sách nhà nước cho lĩnh vực quốc phòng, an ninh.
+D. Tập trung xây dựng kinh tế vĩ mô.
+Câu 2: Nội dung xây dựng tiềm lực chính trị, tinh thần là:
+A. Xây dựng khối đại đoàn kết toàn dân; nâng cao cảnh giác cách mạng; giữ vững ổn định chính trị, trật tự an toàn xã hội và thực hiện tốt giáo dục quốc phòng và an ninh.
+B. Xây dựng nền kinh tế phát triển vững mạnh.
+C. Xây dựng nền văn hóa tiên tiến, rộng mở. 
+D. Xây dựng tiềm lực quân sự vững chắc.
+Câu 3: Điền vào chỗ trống: “Trong khi đặt trọng tâm vào nhiệm vụ xây dựng chủ nghĩa xã hội, chúng ta không một chút lơi lỏng nhiệm vụ bảo vệ Tổ quốc, luôn luôn coi trọng quốc phòng, an ninh, coi đó là ... gắn bó chặt chẽ”.
+A. Nhiệm vụ sách lược.
+B. Nhiệm vụ cấp bách.
+C. Nhiệm vụ.
+D. Nhiệm vụ chiến lược.
+Câu 4: Luật Quốc phòng của nước Cộng hòa xã hội chủ nghĩa Việt Nam được ban hành từ năm nào?
+A. Năm 2016.
+B. Năm 2017.
+C. Năm 2019.
+D. Năm 2018.
+Câu 5: Nội dung xây dựng nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Xây dựng nền dân chủ xã hội chủ nghĩa. 
+B. Xây dựng và củng cố tổ chức Đảng, nhà nước và các đoàn thể chính trị, xã hội.
+C. Xây dựng tiềm lực và thế trận quốc phòng, an ninh. 
+D. Xây dựng khối đại đoàn kết toàn dân tộc.
+Câu 6: CHỌN ĐÁP ÁN SAI: Tiềm lực quốc phòng, an ninh được thể hiện ở tất cả các lĩnh vực đời sống xã hội nhưng tập trung ở:
+A. Tiềm lực chính trị, tinh thần. 
+B. Tiềm lực kinh tế, quân sự, an ninh.
+C. Tiềm lực công nghiệp quốc phòng, khoa học quân sự.
+D. Tiềm lực khoa học và công nghệ.
+Câu 7: Nội dung xây dựng thế trận quốc phòng toàn dân, an ninh nhân dân là:
+A. Tổ chức phòng thủ dân sự, kết hợp cải tạo địa hình với xây dựng hạ tầng và các công trình quốc phòng, an ninh.
+B. Tổ chức phòng thủ dân sự bảo đảm an toàn cho người. 
+C. Tổ chức phòng thủ dân sự, chủ động tiến công tiêu diệt địch.
+D. Tổ chức phòng thủ dân sự bảo đảm an toàn cho người và của cải vật chất.
+Câu 8: Hai nhiệm vụ chiến lược của cách mạng Việt Nam hiện nay là:
+A. Xây dựng phát triển kinh tế và bảo vệ vững chắc độc lập dân tộc.
+B. Bảo vệ Tổ quốc xã hội chủ nghĩa và xây dựng đất nước xã hội chủ nghĩa.
+C. Xây dựng chủ nghĩa xã hội và bảo vệ Tổ quốc xã hội chủ nghĩa.
+D. Bảo vệ độc lập dân tộc và xây dựng chủ nghĩa xã hội.
+Câu 9: Đặc trưng của nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Nền quốc phòng, an ninh bảo vệ quyền và lợi ích của nhân dân.
+B. Nền quốc phòng, an ninh mang tính giai cấp, nhân dân sâu sắc.
+C. Nền quốc phòng, an ninh vì dân, của dân và do nhân dân tiến hành.
+D. Nền quốc phòng do nhân dân xây dựng, mang tính nhân dân sâu sắc.
+Câu 10: Sức mạnh của nền quốc phòng toàn dân, an ninh nhân dân ở nước ta là:
+A. Sức mạnh do các yếu tố chính trị, kinh tế, văn hóa, khoa học.
+B. Sức mạnh tổng hợp do nhiều yếu tố tạo thành. 
+C. Sức mạnh của cả hệ thống chính trị trong nước.
+D. Sức mạnh của toàn dân tộc kết hợp với sức mạnh thời đại.
+Câu 11: Quá trình hiện đại hóa nền quốc phòng toàn dân, an ninh nhân dân phải gắn liền với:
+A. Công nghiệp hóa, hiện đại hóa đất nước.
+B. Tiềm lực khoa học công nghệ của nước ta.
+C. Hiện đại hóa nền kinh tế nước nhà.
+D. Hiện đại hóa quân sự, an ninh.
+Câu 12: Mục đích xây dựng nền quốc phòng toàn dân, an ninh nhân dân vững mạnh là:
+A. Tạo ra những cơ sở vật chất nâng cao đời sống cho lực lượng vũ trang.
+B. Tạo thế chủ động cho sự nghiệp xây dựng và bảo vệ Tổ quốc.
+C. Tạo ra tiềm lực quân sự để phòng thủ, bảo vệ vững chắc Tổ quốc.
+D. Tạo ra môi trường hòa bình để phát triển kinh tế đất nước. 
+Câu 13: Biện pháp để xây dựng nền quốc phòng toàn dân, an ninh nhân dân hiện nay:
+A. Thường xuyên giáo dục ý thức trách nhiệm của mọi người.
+B. Tăng cường vai trò của các tổ chức quần chúng.
+C. Thường xuyên thực hiện giáo dục quốc phòng và an ninh.
+D. Phát huy vai trò cùa các cơ quan đoàn thể, trách nhiệm của công dân.
+Câu 14: Lực lượng quốc phòng, an ninh của nền quốc phòng toàn dân, an ninh nhân dân gồm:
+A. Lực lượng toàn dân, lực lượng vũ trang nhân dân.
+B. Lực lượng quân đội nhân dân và công an nhân dân.
+C. Lực lượng toàn dân và lực lượng dự bị động viên.
+D. Lực lượng chính trị và lực lượng quân sự, công an.
+Câu 15: Tiềm lực chính trị tinh thần của nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Khả năng về chính trị tinh thần của xã hội để thực hiện nhiệm vụ quốc phòng, an ninh và sẵn sàng chiến đấu.
+B. Khả năng về chính trị tinh thần có thể huy động để thực hiện nhiệm vụ quốc phòng, an ninh.
+C. Khả năng về chính trị tinh thần có thể huy động để tự vệ chống lại mọi kẻ thù xâm lược. 
+D. Khả năng về chính trị tinh thần của nhân dân có thể huy động được để chiến đấu chống quân xâm lược. 
+Câu 16: Tiềm lực quốc phòng, an ninh của nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Khả năng về của cải vật chất có thể huy động để thực hiện nhiệm vụ quốc phòng, an ninh.
+B. Khả năng về nhân lực, vật lực, tài chính có thể huy động để thực hiện nhiệm vụ quốc phòng, an ninh.
+C. Khả năng về vũ khí trang bị có thể huy động phục vụ cho nhiệm vụ quốc phòng, an ninh.
+D. Khả năng về phương tiện kỹ thuật có thể huy động thực hiện nhiệm vụ quốc phòng, an ninh.
+Câu 17: “Phân vùng chiến lược về quốc phòng, an ninh kết hợp với vùng kinh tế trên cơ sở quy hoạch các vùng dân cư theo nguyên tắc bảo vệ đi đôi với xây dựng đất nước” là một nội dung của:
+A. Xây dựng thế trận quốc phòng toàn dân, an ninh nhân dân.
+B. Biện pháp xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+C. Nhiệm vụ xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+D. Xây dựng tiềm lực kinh tế của quốc phòng toàn dân, an ninh nhân dân.
+Câu 18: Trong xây dựng tiềm lực quốc phòng, an ninh, tiềm lực chính trị tinh thần là:
+A. Nhân tố chủ yếu tạo nên sức mạnh quốc phòng, an ninh. 
+B. Yếu tố hàng đầu tạo nên sức mạnh quốc phòng, an ninh. 
+C. Nhân tố cơ bản tạo nên sức mạnh của quốc phòng, an ninh.
+D. Yếu tố quan trọng trong sự nghiệp bảo vệ Tổ quốc.
+Câu 19: Xây dựng tiềm lực khoa học công nghệ của nền quốc phòng toàn dân, an ninh nhân dân là:
+A. Tạo nên khả năng về vũ khí trang bị kỹ thuật để phòng thủ đất nước.
+B. Tạo nên khả năng về khoa học công nghệ của quốc gia để khai thác phục vụ quốc phòng, an ninh.
+C. Tạo nên khả năng huy động đội ngũ cán bộ khoa học kỹ thuật phục vụ quốc phòng, an ninh.
+D. Tạo ra khả năng ứng dụng kết quả nghiên cứu khoa học công nghệ vào quốc phòng, an ninh.
+Câu 20: Tiềm lực kinh tế trong nội dung xây dựng tiềm lực quốc phòng toàn dân, an ninh nhân dân là:
+A. Điều kiện tạo sức mạnh vật chất cho nền quốc phòng toàn dân, an ninh nhân dân.
+B. Điều kiện vật chất bảo đảm cho xây dựng lực lượng vũ trang và thế trận quốc phòng.
+C. Điều kiện vật chất để phát triển nền quốc phòng toàn dân, an ninh nhân dân hiện đại.
+D. Điều kiện vật chất cho xây dựng thế trận quốc phòng toàn dân và an ninh nhân dân.
+Câu 21: “Tăng cường sự lãnh đạo của Đảng, sự quản lý của Nhà nước, trách nhiệm triển khai thực hiện của cơ quan, tổ chức và nhân dân đối với xây dựng nền quốc phòng toàn dân, an ninh nhân dân” là một nội dung của:
+A. Nhiệm vụ xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+B. Biện pháp xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+C. Yêu cầu xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+D. Nội dung xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+Câu 22: Trong xây dựng tiềm lực quốc phòng, an ninh, tiềm lực nào tạo sức mạnh vật chất cho nền quốc phòng toàn dân, an ninh nhân dân, là cơ sở vật chất của các tiềm lực khác?
+A. Tiềm lực khoa học, công nghệ.
+B. Tiềm lực chính trị, tinh thần.
+C. Tiềm lực kinh tế.
+D. Tiềm lực quân sự, an ninh.
+Câu 23: “Năng lực lãnh đạo của Đảng, quản lý điều hành của Nhà nước; ý chí quyết tâm của nhân dân, của các lực lượng vũ trang nhân dân sẵn sàng đáp ứng yêu cầu thực hiện nhiệm vụ quốc phòng, an ninh, bảo vệ Tổ quốc” là biểu hiện của:
+A. Ý chí quyết tâm bảo vệ Tổ quốc.
+B. Tiềm lực chính trị, tinh thần.
+C. Sự vững mạnh về quốc phòng, an ninh.
+D. Tiềm lực quân sự, an ninh.
+Câu 24: Trong xây dựng tiềm lực quốc phòng, an ninh, tiềm lực nào là biểu hiện tập trung, trực tiếp sức mạnh quân sự, an ninh của đất nước, giữ vai trò nòng cốt để bảo vệ Tổ quốc?
+A. Tiềm lực quân sự, an ninh.
+B. Tiềm lực chính trị, tinh thần.
+C. Tiềm lực kinh tế.
+D. Tiềm lực chính trị, quân sự.
+Câu 25: “Số lượng, chất lượng đội ngũ cán bộ khoa học kỹ thuật, cơ sở vật chất kỹ thuật có thể huy động phục vụ cho quốc phòng, an ninh và năng lực ứng dụng kết quả nghiên cứu khoa học có thể đáp ứng nhu cầu quốc phòng, an ninh” là nội dung biểu hiện của:
+A. Tiềm lực kinh tế của nền quốc phòng toàn dân, an ninh nhân dân.
+B. Tiềm lực kỹ thuật quân sự của nền quốc phòng toàn dân, an ninh nhân dân.
+C. Tiềm lực khoa học, công nghệ của nền quốc phòng toàn dân, an ninh nhân dân.
+D. Tiềm lực khoa học quân sự của nền quốc phòng toàn dân, an ninh nhân dân.
+Câu 26: “Thường xuyên thực hiện giáo dục quốc phòng và an ninh” là một biện pháp nhằm:
+A. Tác động tích cực và trực tiếp đến nhận thức về nhiệm vụ quốc phòng, an ninh của nhân dân.
+B. Tác động tích cực và trực tiếp đến trình độ dân trí về bảo vệ độc lập, chủ quyền, thống nhất toàn vẹn lãnh thổ.
+C. Tác động mạnh mẽ đến ý chí tinh thần của cả hệ thống chính trị trong sự nghiệp xây dựng và bảo vệ Tổ quốc. 
+D. Tác động trực tiếp đến nhận thức, tinh thần và ý chí quyết tâm của lực lượng vũ trang trong khu vực phòng thủ.
+BÀI 4: CHIẾN TRANH NHÂN DÂN BẢO VỆ TỔ QUỐC VIỆT NAM XÃ HỘI CHỦ NGHĨA
+Câu 1: Tính chất của chiến tranh nhân dân bảo vệ Tổ quốc:
+A. Là cuộc chiến tranh toàn dân, lấy lực lượng vũ trang làm nòng cốt.
+B. Là cuộc chiến tranh toàn dân, toàn diện, lấy lực lượng vũ trang làm nòng cốt.
+C. Là cuộc chiến tranh toàn diện lấy quân sự là quyết định.
+D. Là cuộc chiến tranh cách mạng chống các thế lực phản cách mạng.
+Câu 2: Tính hiện đại trong chiến tranh nhân dân bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa được thể hiện ở:
+A. Sử dụng vũ khí trang bị hiện đại để tiến hành chiến tranh.
+B. Sử dụng vũ khí trang bị hiện đại để đánh bại kẻ thù có vũ khí hiện đại hơn.
+C. Hiện đại về vũ khí, trang bị, tri thức và nghệ thuật quân sự.
+D. Kết hợp sử dụng vũ khí tương đối hiện đại với hiện đại để tiến hành chiến tranh.
+Câu 3: Quan điểm thực hiện toàn dân đánh giặc trong chiến tranh nhân dân bảo vệ Tổ quốc có ý nghĩa:
+A. Là điều kiện để mỗi người dân được tham gia đánh giặc, giữ nước.
+B. Là điều kiện để phát huy cao nhất yếu tố con người trong chiến tranh.
+C. Là điều kiện để phát huy cao nhất sức mạnh tổng hợp trong cuộc chiến tranh.
+D. Là điều kiện để thực hiện đánh giặc rộng khắp.
+Câu 4: Theo quan điểm của Đảng, yếu tố quyết định thắng lợi trên chiến trường là:
+A. Vũ khí.
+B. Nghệ thuật quân sự.
+C. Con người.
+D. Tổ chức.
+Câu 5: Quan điểm của Đảng về chuẩn bị cho chiến tranh nhân dân bảo vệ Tổ quốc:
+A. Chuẩn bị mọi mặt trên cả nước để đánh lâu dài.
+B. Chuẩn bị đầy đủ tiềm lực kinh tế, quân sự để đánh lâu dài.
+C. Chuẩn bị mọi mặt trên cả nước, cũng như từng khu vực để đủ sức đánh lâu dài.
+D. Chuẩn bị trên tất cả khu vực phòng thủ để đủ sức đánh lâu dài.
+Câu 6: Vì sao phải kết hợp kháng chiến với xây dựng, vừa chiến đấu vừa sản xuất:
+A. Cuộc chiến tranh rất ác liệt, kẻ thù sử dụng vũ khí công nghệ cao.
+B. Cuộc chiến tranh rất ác liệt, tổn thất về người và vật chất rất lớn.
+C. Cuộc chiến tranh sẽ mở rộng, không phân biệt tiền tuyến, hậu phương.
+D. Cuộc chiến tranh kẻ thù sử dụng một lượng bom đạn rất lớn để tàn phá.
+Câu 7: Trong chiến tranh nhân dân bảo vệ Tổ quốc phải kết hợp chặt chẽ giữa:
+A. Chống quân xâm lược với chống bọn khủng bố.
+B. Chống địch tấn công từ bên ngoài với bạo loạn lật đổ từ bên trong.
+C. Chống bạo loạn với trấn áp bọn phản động.
+D. Chống bạo loạn lật đổ với các hoạt động phá hoại khác.
+Câu 8: Vì sao phải kết hợp đấu tranh quân sự với bảo đảm an ninh chính trị, trật tự, an toàn xã hội:
+A. Lực lượng phản động tiến hành phá hoại, lật đổ chính quyền.
+B. Lực lượng phản động lợi dụng chiến tranh kết hợp với phản động nước ngoài chống phá.
+C. Lực lượng phản động trong nước cấu kết với quân xâm lược để chống phá.
+D. Lực lượng phản động trong nước lợi dụng cơ hội chiến tranh để làm rối loạn trật tự trị an.
+Câu 9: Nội dung chủ yếu của chiến tranh nhân dân là:
+A. Tổ chức thế trận toàn dân đánh giặc.
+B. Tổ chức thế trận đánh giặc của các lực lượng vũ trang nhân dân.
+C. Tổ chức thế trận chiến tranh nhân dân.
+D. Tổ chức thế trận phòng thủ của chiến tranh nhân dân.
+Câu 10: Lực lượng trong chiến tranh nhân dân bảo vệ Tổ quốc gồm:
+A. Lực lượng vũ trang ba thứ quân.
+B. Lực lượng toàn dân lấy lực lượng vũ trang ba thứ quân làm nòng cốt.
+C. Lực lượng vũ trang ba thứ quân kết hợp các lực lượng vũ trang khác.
+D. Là sự phối hợp giữa các lực lượng. 
+Câu 11: Mục đính của chiến tranh nhân dân là để:
+A. Tiêu hao, tiêu diệt kẻ thù.
+B. Đánh bại kẻ thù xâm lược.
+C. Bảo vệ vững chắc Tổ quốc Việt Nam xã hội chủ nghĩa.
+D. Bảo vệ độc lập chủ quyền lãnh thổ.
+Câu 12: Trường hợp nào sau đây chỉ lực lượng vũ trang ba thứ quân?
+A. Bộ đội chủ lực, bộ đội địa phương, dân quân tự vệ.
+B. Quân đội, công an, dân quân tự vệ.
+C. Quân thường trực, quân dự bị, lực lượng dân phòng.
+D. Bộ đội địa phương, dân quân tự vệ, thanh niên xung phong. 
+Câu 13: Tiến hành chiến tranh nhân dân phải lấy lực lượng nào làm nòng cốt?
+A. Lực lượng quân đội.
+B. Lực lượng chủ lực.
+C. Lực lượng vũ trang nhân dân.
+D. Dân quân tự vệ và bộ đội địa phương.
+Câu 14: Quan điểm “Kết hợp đấu tranh quân sự với bảo đảm an ninh chính trị, giữ gìn trật tự, an toàn xã hội…” có nghĩa là: 
+A. Vừa đánh giặc ngoài vừa dẹp thù trong.
+B. Vừa đánh giặc vừa trấn áp tội phạm.
+C. Vừa đánh giặc vừa giữ gìn hòa bình, ổn định cho đất nước.
+D. Vừa bảo đảm an ninh vừa giữ gìn trật tự an toàn xã hội. 
+Câu 15: “…Tranh thủ sự giúp đỡ quốc tế, sự đồng tình ủng hộ của nhân dân tiến bộ trên thế giới” thể hiện tinh thần quan điểm nào của Đảng trong chiến tranh nhân dân?
+A. Quan điểm phát huy sức mạnh thời đại.
+B. Quan điểm tự lực tự cường.
+C. Quan điểm ngoại giao của Đảng.
+D. Quan điểm đoàn kết Quốc tế.
+Câu 16: Chiến tranh nhân dân được thể hiện ở nước ta từ khi nào?
+A. Kháng chiến chống Pháp.
+B. Kháng chiến chống Mỹ.
+C. Thời phong kiến.
+D. Thời nguyên thủy.
+Câu 17: Thế trận chiến tranh nhân dân là:
+A. Xây dựng các công trình phòng thủ trong nhân dân.
+B. Thế trận bố trí dân cư trong cả nước.
+C. Cách thức tổ chức, bố trí lực lượng, phương tiện để tiến hành chiến tranh và hoạt động tác chiến.
+D.Là việc sắp xếp phân chia, bố trí vũ khí thiết bị.
+Câu 18: Mục đích của chiến tranh nhân dân bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa là:
+A. Bảo vệ lợi ích quốc gia, dân tộc.
+B. Bảo vệ hậu phương vững chắc.
+C. Bảo đảm “thế trận lòng dân”.
+D. Bảo đảm cho tiền tuyến càng đánh, càng mạnh.
+Câu 19: Mặt trận có ý nghĩa quyết định thắng lợi trong chiến tranh nhân dân Việt Nam là:
+A. Mặt trận kinh tế. 
+B. Mặt trận ngoại giao.
+C. Mặt trận quân sự. 
+D. Mặt trận chính trị.
+Câu 20: Lực lượng nào làm nòng cốt trong tiến hành chiến tranh nhân dân, toàn dân đánh giặc?
+A. Lực lượng quân đội.
+B. Lực lượng bộ đội chủ lực. 
+C. Lực lượng vũ trang nhân dân.
+D. Dân quân tự vệ và bộ đội địa phương.
+Câu 21: Tiến hành chiến tranh toàn diện phải kết hợp chặt chẽ giữa: 
+A. Thế trận chiến tranh với lực lượng chiến tranh. 
+B. Chống địch tấn công bằng biện pháp phi vũ trang với bạo loạn lật đổ từ bên trong. 
+C. Đấu tranh quân sự, chính trị, ngoại giao, kinh tế, văn hóa và tư tưởng.
+D. Chống bạo loạn lật đổ với các hoạt động phá hoại khác. 
+Câu 22: Trong chiến tranh nhân dân bảo vệ Tổ quốc, phải kết hợp kháng chiến với xây dựng, vừa chiến đấu vừa sản xuất, vì? 
+A. Kẻ địch đẩy mạnh thủ đoạn kết hợp với lực lượng phản động nội địa.
+B. Kẻ địch sử dụng chiến tranh tâm lý.
+C. Nhằm xây dựng tốt nòng cốt của chiến tranh nhân dân Việt Nam. 
+D. Đáp ứng nhu cầu bảo đảm cho chiến tranh và ổn định đời sống nhân dân. 
+Câu 23: Điền vào chỗ trống: “Kết hợp sức mạnh dân tộc với ...., phát huy tinh thần tự lực tự cường, tranh thủ sự giúp đỡ quốc tế, sự đồng tình, ủng hộ của nhân dân tiến bộ trên thế giới”. 
+A. Xu thế toàn cầu hóa.
+B. Sức mạnh thời đại.
+C. Sức mạnh của dư luận quốc tế.
+D. Sức mạnh quốc tế.
+Câu 24: Biện pháp để tiến hành chiến tranh toàn diện, kết hợp chặt chẽ giữa các mặt trận là:
+A. Đảng phải có đường lối chiến lược, sách lược đúng, tạo thế và lực cho từng mặt trận đấu tranh.  
+B. Tăng cường giáo dục quốc phòng và an ninh cho toàn dân. 
+C. Xác định đúng đối tượng tác chiến của chiến tranh nhân dân Việt Nam. 
+D. Xác định đây là cuộc chiến tranh chính nghĩa, tự vệ cách mạng của Việt Nam.
+Câu 25: Vì sao trong chiến tranh nhân dân phải chuẩn bị mọi mặt trên cả nước và từng khu vực để đủ sức đánh lâu dài?
+A. Kẻ thù xâm lược Việt Nam có tiềm lực quân sự, kinh tế mạnh hơn rất nhiều lần.
+B. Kẻ thù tiến công bất ngờ bằng các “đòn phủ đầu”.
+C. Kẻ thù sử dụng thủ đoạn kết hợp với các lực lượng phản động nội địa.
+D. Kẻ thù không đủ kỹ năng để đánh dài ngày do chi phí tốn kém. 
+Câu 26: Một trong những quan điểm của Đảng Cộng sản Việt Nam về chuẩn bị cho chiến tranh nhân dân bảo vệ Tổ quốc là:
+A. Chuẩn bị mọi mặt trên cả nước để đánh lâu dài.
+B. Chuẩn bị đầy đủ tiềm lực kinh tế, quân sự để đánh lâu dài.
+C. Chuẩn bị mọi mặt trên cả nước cũng như từng khu vực để đủ sức đánh lâu dài.
+D. Chuẩn bị trên tất cả khu vực phòng thủ để đủ sức đánh lâu dài. 
+Câu 27: Lực lượng toàn dân trong chiến tranh nhân dân được tổ chức chặt chẽ thành các lực lượng nào?
+A. Lực lượng vũ trang ba thứ quân. 
+B. Lực lượng quần chúng rộng rãi và lực lượng quân sự.
+C. Lực lượng quần chúng rộng rãi .
+D. Lực lượng vũ trang nhân dân.
+Câu 28: Âm mưu, thủ đoạn của kẻ thù khi xâm lược nước ta là:
+A. Thực hiện đánh nhanh, thắng nhanh, kết hợp tiến công quân sự từ bên ngoài với bạo loạn lật đổ từ bên trong.
+B. Đánh đồng loạt các mục tiêu, trên từng khu vực và kết hợp với các biện pháp phi vũ trang để tuyên truyền, lừa bịp dư luận.
+C. Thực hiện bao vây phong tỏa kinh tế, quân sự, vừa đánh vừa thăm dò phản ứng của ta, kết hợp với lôi kéo đồng minh.
+D. Đánh hủy diệt ngay từ đầu, đưa lực lượng đối lập lên nắm quyền, kết hợp với đưa lực lượng quân sự vào chiếm đóng hỗ trợ chính phủ mới.
+Câu 29: Đặc điểm của chiến tranh nhân dân bảo vệ Tổ quốc là:
+A. Khu vực phòng thủ tỉnh, thành phố ngày càng được củng cố và phát triển vững chắc.
+B. Nền quốc phòng toàn dân, an ninh nhân dân đã được chuẩn bị từ thời bình và thường xuyên được củng cố, phát triển.
+C. Hình thái đất nước được chuẩn bị sẵn sàng, thế trận quốc phòng, an ninh ngày càng được củng cố vững chắc.
+D. Thế trận quốc phòng, an ninh được xây dựng rộng khắp trên cả nước, từng địa phương, có trọng tâm, trọng điểm.
+Câu 30: Chọn câu trả lời SAI: Tính chất của chiến tranh nhân dân bảo vệ Tổ quốc là:
+A. Toàn dân, toàn diện, lấy lực lượng vũ trang ba thứ quân làm nòng cốt.
+B. Là cuộc chiến tranh chính nghĩa, tự vệ cách mạng.
+C. Là cuộc chiến tranh mang tính hiện đại.
+D. Toàn dân, lực lượng chính trị làm nòng cốt.
+Câu 31: Quan điểm của Đảng trong chiến tranh nhân dân bảo vệ Tổ quốc là:
+A. Tiến hành chiến tranh trên cả nước, trên mọi mặt trận, lấy thắng lợi quân sự là yếu tố quyết định giành thắng lợi.
+B. Tiến hành chiến tranh toàn diện, đánh địch trên mọi mặt trận chính trị, quân sự, ngoại giao, trên cả ba vùng chiến lược.
+C. Tiến hành chiến tranh toàn diện, kết hợp chặt chẽ giữa đấu tranh quân sự, chính trị, ngoại giao, kinh tế, văn hóa, tư tưởng.
+D. Tiến hành cuộc chiến tranh chính nghĩa, tự vệ bằng sức mạnh của cả dân tộc để bảo vệ độc lập tự do của dân tộc, bảo vệ độc lập chủ quyền, toàn vẹn lãnh thổ.
+Câu 32: Tính hiện đại trong chiến tranh nhân dân bảo vệ Tổ quốc ở Việt Nam là:
+A. Hiện đại về vũ khí, trang bị, cách đánh và thế trận.
+B. Hiện đại về tri thức lực lượng vũ trang và vũ khí, trang bị.
+C. Hiện đại về vũ khí, trang bị và hệ thống phòng thủ.
+D. Hiện đại về vũ khí, trang bị, tri thức và nghệ thuật quân sự.
+Câu 33: Trong chiến tranh nhân dân bảo vệ Tổ quốc, thế trận của chiến tranh được triển khai:
+A. Bố trí rộng khắp, có trọng tâm, trọng điểm, không dàn trải.
+B. Bố trí sâu, rộng, tập trung ở khu vực kinh tế, xã hội chủ yếu.
+C. Bố trí rộng trên cả nước nhưng phải có trọng tâm, trọng điểm.
+D. Bố trí rộng trên từng địa phương, tập trung ở các địa bàn trọng điểm.
+Câu 34: Lực lượng trong chiến tranh nhân dân bảo vệ Tổ quốc gồm:
+A. Lực lượng vũ trang nhân dân gồm ba thứ quân: Bộ đội chủ lực, bộ đội địa phương và lực lượng dân quân tự vệ.
+B. Lực lượng toàn dân được tổ chức chặt chẽ thành lực lượng quần chúng rộng rãi và lực lượng quân sự.
+C. Lực lượng vũ trang ba thứ quân làm nòng cốt kết hợp với các lực lượng vũ trang khác trong khu vực phòng thủ.
+D. Lực lượng vũ trang thường trực, lực lượng dự bị động viên và lực lượng dân quân tự vệ.
+Câu 35: Trong tổ chức lực lượng chiến tranh nhân dân bảo vệ Tổ quốc, lực lượng vũ trang phải được xây dựng:
+A. Vững mạnh toàn diện, coi trọng cả số lượng và chất lượng, lấy chất lượng là chính, lấy xây dựng chính trị làm cơ sở.
+B. Hùng mạnh, vũ khí trang bị hiện đại, coi trọng chất lượng, lấy xây dựng chính trị làm cơ sở.
+C. Vững mạnh về mọi mặt, có bản lĩnh chính trị vững vàng, kỷ luật nghiêm minh, sẵn sàng chiến đấu cao.
+D. Cách mạng, chính quy, tinh nhuệ, từng bước hiện đại, sẵn sàng chiến đấu cao, đáp ứng yêu cầu nhiệm vụ.
+Câu 36: Quan điểm thực hiện toàn dân đánh giặc trong chiến tranh nhân dân bảo vệ Tổ quốc khẳng định:
+A. Đây là cuộc chiến tranh phát huy cao nhất yếu tố con người.
+B. Đây là cuộc chiến tranh của dân, do dân và vì dân.
+C. Đây là cuộc chiến tranh huy động được sức mạnh của quần chúng nhân dân.
+D. Đây là cuộc chiến tranh phát huy sức mạnh tổng hợp của dân tộc.
+BÀI 5: XÂY DỰNG LỰC LƯỢNG VŨ TRANG NHÂN DÂN
+Câu 1: Lực lượng vũ trang ba thứ quân gồm: 
+A. Bộ đội địa phương, dân quân tự vệ, hải quan.
+B. Bộ đội chủ lực, du kích, bộ đội hải quân.
+C. Dân quân tự vệ, cảnh sát biển, bộ đội chủ lực.
+D. Bộ đội chủ lực, bộ đội địa phương, dân quân tự vệ
+Câu 2: Điền từ còn thiếu vào chỗ trống: “Lực lượng vũ trang nhân dân là …... (1) …….và ……..(2)……do Đảng cộng sản Việt Nam lãnh đạo, Nhà nước Cộng hòa Xã hội Chủ nghĩa Việt Nam quản lý”.
+A. Lực lượng vũ trang (1); bán vũ trang (2).
+B. Tiềm lực vũ trang (1); tiềm lực bán vũ trang (2).
+C. Tổ chức vũ trang (1); bán vũ trang (2).
+D. Tiềm lực quốc phòng (1); thế trận quốc phòng (2).
+Câu 3: Nhiệm vụ chủ yếu của lực lượng vũ trang nhân dân là:
+A. Phối hợp chặt chẽ chống quân địch tấn công từ bên ngoài vào và bạo loạn lật đổ từ bên trong.
+B. Tổ chức lực lượng chiến tranh nhân dân và thế trận chiến tranh nhân dân.
+C. Chiến đấu giành và giữ độc lập, chủ quyền thống nhất và toàn vẹn lãnh thổ của Tổ quốc. 
+D. Tổ chức lực lượng quần chúng rộng rãi, xây dựng nền quốc phòng toàn dân, an ninh nhân dân.
+Câu 4: Tìm câu trả lời SAI: Đặc điểm của việc xây dựng lực lượng vũ trang nhân dân ta hiện nay?
+A. Là yêu cầu để thực hiện hai nhiệm vụ chiến lược của cách mạng.
+B. Bảo vệ sự nghiệp đổi mới, sự nghiệp công nghiệp hóa, hiện đại hóa đất nước.
+C. Tiếp tục phát triển nền văn hóa tiên tiến đậm đà bản sắc dân tộc.
+D. Thực trạng của lực lượng vũ trang.
+Câu 5: Nguyên tắc Đảng lãnh đạo các lực lượng vũ trang nhân dân? 
+A. Tuyệt đối, thống nhất về mọi mặt. 
+B. Tuyệt đối và trực tiếp. 
+C. Tuyệt đối, trực tiếp về mọi mặt.
+D. Trực tiếp về mọi mặt.
+Câu 6: Quan điểm, nguyên tắc cơ bản trong xây dựng lực lượng vũ trang nhân dân ta hiện nay:
+A. Tăng cường sự lãnh đạo của Đảng đối với lực lượng vũ trang nhân dân.
+B. Xây dựng lực lượng vũ trang nhân dân lấy chất lượng là chính, lấy xây dựng về chính trị làm cơ sở.
+C. Tự lực, tự cường xây dựng lực lượng vũ trang nhân dân và bảo đảm lực lượng vũ trang luôn trong tư thế sẵn sàng chiến đấu.
+D. Tất cả đều đúng.
+Câu 7: Cội nguồn của lực lượng vũ trang nhân dân Việt Nam là:
+A. Đội Tự vệ Đỏ.
+B. Quân đội nhà nghề.
+C. Nghĩa quân của các cuộc khởi nghĩa Bắc Sơn, Nam Kỳ, Ba Tơ…
+D. Con em của nhân dân.
+Câu 8: Phương hướng xây dựng lực lượng vũ trang nhân dân Việt Nam hiện nay là:
+A. Chính quy, nhà nghề, từng bước hiện đại.
+B. Cách mạng, chính quy, tinh nhuệ, từng bước hiện đại, một số quân chủng, binh chủng, lực lượng tiến thẳng lên hiện đại.
+C. Tinh nhuệ, chính quy, nhà nghề, từng bước hiện đại.
+D. Tinh nhuệ, nhà nghề, hiện đại.
+Câu 9: Quan điểm cơ bản của Đảng trong xây dựng lực lượng vũ trang nhân dân: Lấy xây dựng về … làm cơ sở.
+A. Quân sự. 
+B. Hậu cần, tài chính.
+C. Chính trị.
+D. Nghệ thuật quân sự.
+Câu 10: Xây dựng lực lượng vũ trang nhân dân phải đảm bảo luôn trong tư thế sẵn sàng chiến đấu vì:
+A. Đó là nhiệm vụ chủ yếu của lực lượng vũ trang nhân dân.
+B. Ngày nay kẻ địch đang luôn tìm cách phá hoại ta.
+C. Đó là chức năng, nhiệm vụ cơ bản, thường xuyên của lực lượng vũ trang nhân dân.
+D. Đó là yêu cầu của sự nghiệp cách mạng hiện nay.
+Câu 11: Phương hướng xây dựng lực lượng dự bị động viên phải:
+A. Có số lượng đông, chất lượng cao, sẵn sàng động viên khi cần thiết.
+B. Có lực lượng hùng hậu, huấn luyện và quản lý tốt, đảm bảo khi cần động viên nhanh theo kế hoạch.
+C. Luôn trong tư thế sẵn sàng chiến đấu.
+D. Phối hợp chặt chẽ với lực lượng thường trực và dân quân tự vệ.
+Câu 12: Một trong những biện pháp chủ yếu trong xây dựng lực lượng vũ trang nhân dân là:
+A. Từng bước giải quyết yêu cầu về vũ khí cho lực lượng vũ trang nhân dân.
+B. Từng bước trang bị vũ khí, phương tiện hiện đại cho lực lượng vũ trang nhân dân. 
+C. Từng bước giải quyết yêu cầu về vũ khí, trang bị kỹ thuật cho lực lượng vũ trang nhân dân.
+D. Từng bước đổi mới bổ sung đầy đủ vũ khí hiện đại cho lực lượng vũ trang nhân dân.
+Câu 13: Tổ chức vũ trang đầu tiên, được coi tiền thân của lực lượng vũ trang nhân dân Việt Nam.
+A. Đội Tự vệ đỏ.
+B. Du kích Ba Tơ. 
+C. Cứu quốc quân.
+D. Du kích Bắc Sơn. 
+Câu 14: Chọn từ thích hợp điền vào chỗ còn thiếu trong câu sau: “Xây dựng lực lượng vũ trang nhân dân phải đảm bảo luôn trong tư thế ....”.
+A. Hành quân chiến đấu.
+B. Sẵn sàng chiến thắng.
+C. Chiến đấu kiên cường.
+D. Sẵn sàng chiến đấu.
+Câu 15: Phương hướng xây dựng lực lượng dự bị động viên là:
+A. Có số lượng đông, chất lượng cao, sẵn sàng động viên khi cần thiết. 
+B. Hùng hậu, huấn luyện và quản lý tốt, đảm bảo khi cần có thể động viên nhanh theo kế hoạch. 
+C. Luôn trong tư thế sẵn sàng chiến đấu.
+D. Phối hợp chặt chẽ với lực lượng thường trực và dân quân tự vệ. 
+Câu 16: Chọn câu SAI: Những quan điểm, nguyên tắc cơ bản trong xây dựng lực lượng vũ trang nhân dân ta hiện nay?
+A. Đảm bảo lực lượng vũ trang luôn trong tư thế sẵn sàng chiến đấu.
+B. Giữ vững và tăng cường sự lãnh đạo của Đảng đối với lực lượng vũ trang.
+C. Lấy xây dựng chất lượng là chính, lấy xây dựng về chính trị làm cơ sở.
+D. Xây dựng lực lượng vũ trang chuyên nghiệp.
+Câu 17: Quan điểm, nguyên tắc của Đảng về xây dụng lực lượng vũ trang là:
+A. Lấy chất lượng là chính, lấy xây dựng chính trị làm cơ sở.
+B. Lấy số lượng là chính, lấy xây dựng chính trị làm cơ sở.
+C. Lấy chất lượng là chính, lấy xây dựng quân sự làm cơ sở. 
+D. Lấy chất lượng là chính, lấy xây dựng kỹ năng chiến đấu làm cơ sở.
+Câu 18: Lực lượng vũ trang nhân dân Việt Nam gồm:
+A. Quân đội nhân dân, công an nhân dân, dân quân tự vệ.
+B. Bộ đội thường trực, lực lượng công an, dân quân tự vệ.
+C. Bộ đội chủ lực, bộ đội địa phương, dân quân tự vệ.
+D. Bộ đội chủ lực, công an nhân dân, bộ đội biên phòng.
+Câu 19: Quân đội nhân dân Việt Nam thành lập ngày, tháng, năm nào?
+A. 19/8/1945.
+B. 22/12/1944 .
+C. 20/12/1960.
+D. 22/12/1945.
+Câu 20: Đặc điểm thuận lợi trong xây dựng lực lượng vũ trang nhân dân là:
+A. Quan hệ quốc tế ngày càng được mở rộng.
+B. Tiềm lực và vị thế của nước ta được tăng cường.
+C. Hội nhập kinh tế quốc tế ngày càng sâu hơn.
+D. Kinh tế vẫn tiếp tục tăng trưởng.
+Câu 21: Lực lượng vũ trang nhân dân trong bảo vệ Tổ quốc có vị trí là lực lượng:
+A. Xung kích trong các hoạt động quân sự, an ninh và quyết định trong chiến tranh.
+B. Nòng cốt của quốc phòng toàn dân, an ninh nhân dân và chiến tranh nhân dân.
+C. Chủ yếu của sự nghiệp bảo vệ Tổ quốc, nòng cốt trong xây dựng thế trận quốc phòng, an ninh.
+D. Nòng cốt quyết định sức mạnh quốc phòng, an ninh của nhân dân ta trong thời bình.
+Câu 21: Dân quân tự vệ Việt Nam thành lập ngày, tháng năm nào? 
+A. 30/4/1975.
+B. 28/3/1930.
+C. 19/8/1945.
+D. 28/3/1935.
+Câu 22: Công an nhân dân Việt Nam thành lập ngày, tháng, năm nào?
+A. 19/8/1944.
+B. 22/12/1945.
+C. 19/08/1945 .
+D. 20/12/1960.
+BÀI 6: KẾT HỢP PHÁT TRIỂN KT-XH VỚI TĂNG CƯỜNG QUỐC PHÒNG VÀ AN NINH
+Câu 1: Quốc phòng là công việc giữ nước của một quốc gia, nhằm mục đích:
+A. Giữ vững hòa bình, đẩy lùi, ngăn chặn các hoạt động gây chiến của kẻ thù và sẵn sàng đánh thắng chiến tranh xâm lược dưới mọi hình thức, quy mô. 
+B. Bảo vệ Tổ quốc, bảo vệ tính mạng và tài sản của nhân dân, bảo vệ thành quả cách mạng.
+C. Bảo vệ chế độ xã hội chủ nghĩa, bảo vệ lợi ích của giai cấp công nhân và nhân dân lao động.
+D. Bảo vệ chính quyền, chống lại mọi âm mưu thủ đoạn chống phá của chủ nghĩa đế quốc và các thế lực phản động.
+Câu 2: An ninh của một quốc gia là: 
+A. Trạng thái đất nước ổn định, bình yên, tính mạng và tài sản nhân dân được bảo vệ, xã hội không ngừng phát triển.
+B. Trạng thái đất nước an toàn, xã hội trật tự không bị rối loạn, mọi người được sống bình yên, xã hội tồn tại và phát triển.
+C. Trạng thái đất nước thanh bình, xã hội có trật tự kỷ cương, mọi người được an toàn, xã hội tồn tại và phát triển.
+D. Trạng thái đất nước ổn định an toàn, không có dấu hiệu nguy hiểm để đe dọa sự tồn tại và phát triển bình thường của cá nhân, của tổ chức, của toàn xã hội. 
+Câu 3: Kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại ở nước ta hiện nay là:
+A. Hoạt động tích cực, chủ động của Nhà nước và nhân dân trong việc gắn kết chặt chẽ hoạt động kinh tế, xã hội; quốc phòng, an ninh và đối ngoại trong một chỉnh thể thống nhất. 
+B. Hoạt động của toàn dân dưới sự lãnh đạo của Đảng thực hiện thống nhất các hoạt động kinh tế, xã hội, quốc phòng và an ninh.
+C. Hoạt động tích cực của toàn Đảng, toàn quân và toàn dân thực hiện trên phạm vi cả nước gắn kết các hoạt động lại với nhau.
+D. Hoạt động một cách chủ động của nhà nước điều hành thực hiện thống nhất, chặt chẽ các hoạt động kinh tế, xã hội, quốc phòng ,an ninh trên phạm vi cả nước.
+Câu 4: Tác động tích cực của quốc phòng, an ninh đối với kinh tế là:
+A. Hoạt động quốc phòng, an ninh tiêu tốn đáng kể một phần nguồn nhân lực, vật lực, tài chính của xã hội.
+B. Quốc phòng, an ninh vững mạnh sẽ tạo môi trường hoà bình, ổn định lâu dài, tạo điều kiện thuận lợi cho phát triển kinh tế, xã hội
+C. Hoạt động quốc phòng, an ninh còn có thể dẫn đến huỷ hoại môi trường sinh thái, để lại hậu quả nặng nề cho kinh tế, nhất là khi chiến tranh xảy ra.
+D. Kinh tế quyết định đến việc cung cấp số lượng, chất lượng nguồn nhân lực cho quốc phòng, an ninh, qua đó quyết định đến tổ chức biên chế của lực lượng vũ trang.
+Câu 5: Kinh tế và quốc phòng, an ninh có mối quan hệ, tác động qua lại lẫn nhau, trong đó:
+A. Quốc phòng, an ninh không phụ thuộc vào kinh tế.
+B. Kinh tế quyết định đến quốc phòng, an ninh.
+C. Quốc phòng an ninh dựa vào sự phát triển kinh tế.
+D. Kinh tế tác động tích cực đến quốc phòng, an ninh.
+Câu 6: Kế sách của ông cha ta đã thể hiện kết hợp kinh tế với quốc phòng và an ninh:
+A. Ngụ binh ư nông.
+B. Ngụ nông ư binh.
+C. Nông binh cư ngụ.
+D. Ngụ binh công nông.
+Câu 7: Nội dung thể hiện vai trò của kinh tế quyết định đến quốc phòng, an ninh là:
+A. Cung cấp cơ sở vật chất, vũ khí trang bị chiến đấu cho lực lượng vũ trang nhân dân.
+B. Bảo đảm đầy đủ cơ sở vật chất kỹ thuật cho mọi hoạt động của lực lượng vũ trang.
+C. Quyết định việc tổ chức bố trí lực lượng, cơ sở vật chất kỹ thuật cho quân đội, công an.
+D. Quyết định đến việc cung cấp số lượng, chất lượng nguồn nhân lực cho quốc phòng, an ninh.
+Câu 8: Giải pháp thực hiện kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại là:
+A. Mở rộng quan hệ đối ngoại, hợp tác quốc tế về kinh tế, chính trị, văn hóa, khoa học, quốc phòng, an ninh. 
+B. Tổ chức biên chế và bố trí lực lượng vũ trang phải phù hợp với điều kiện kinh tế và yêu cầu bảo vệ Tổ quốc.
+C. Xây dựng chiến lược tổng thể kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong thời kỳ mới.
+D. Coi trọng giáo dục bồi dưỡng nhân lực, đào tạo nhân tài của đất nước, đáp ứng yêu cầu xây dựng phát triển kinh tế, xã hội.
+Câu 9: Chủ trương của Đảng kết hợp kinh tế với quốc phòng, an ninh trong kháng chiến chống Pháp là:
+A. Tiến hành chiến tranh vừa củng cố địa phương.
+B. Vừa kháng chiến vừa kiến quốc.
+C. Tăng gia sản xuất vừa thực hiện tiết kiệm.
+D. Vừa xây dựng làng kháng chiến vừa sản xuất.
+Câu 10: Trong kháng chiến chống Mỹ, Đảng đã đề ra chủ trương: “Trong xây dựng kinh tế, phải thấu suốt nhiệm vụ phục vụ quốc phòng, cũng như trong củng cố quốc phòng phải khéo sắp xếp cho ăn khớp với công cuộc xây dựng kinh tế”, chủ trương đó được triển khai thực hiện:
+A. Trên phạm vi cả nước.
+B. Ở miền Nam.
+C. Ở miền Trung.
+D. Ở miền Bắc.
+Câu 11: Nội dung chủ yếu của việc kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong phát triển các vùng lãnh thổ, các tỉnh, thành phố là:
+A. Kết hợp quy hoạch phát triển các khu dân cư, khu công nghiệp với khu vực phòng thủ then chốt của vùng, của từng tỉnh, thành phố.
+B. Kết hợp trong xây dựng chiến lược, quy hoạch tổng thể phát triển kinh tế, xã hội với quốc phòng, an ninh của vùng, của từng tỉnh, thành phố.
+C. Kết hợp trong quy hoạch tổng thể và cụ thể đối với phát triển kinh tế và quốc phòng, an ninh của từng vùng, từng khu vực phòng thủ tỉnh, thành phố.
+D. Kết hợp trong quy hoạch xây dựng các khu kinh tế và khu vực phòng thủ của vùng và của từng tỉnh, thành phố.
+Câu 12: Kết hợp phát triển kinh tế xã hội với tăng cường quốc phòng, an ninh đối với vùng núi biên giới là cực kỳ quan trọng, vì:
+A. Vùng dân cư còn nhiều khó khăn về kinh tế, xã hội.
+B. Vùng trọng điểm của chiến lược “Diễn biến hòa bình”.
+C. Vùng hậu phương chiến lược của cả nước nếu chiến tranh xảy ra. 
+D. Vùng có tầm quan trọng đặc biệt trong chiến lược phòng thủ bảo vệ Tổ quốc.
+Câu 13: Nội dung cần tập trung kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh ở vùng biển, đảo là:
+A. Phát triển các loại hình dịch vụ trên biển, đảo, tạo điều kiện cho dân bám trụ, sinh sống, làm ăn.
+B. Có cơ chế chính sách thỏa đáng để động viên ngư dân đầu tư tàu thuyền đánh bắt xa bờ.
+C. Phát triển các tập thể, các đội tàu thuyền đánh cá để có điều kiện xây dựng, phát triển lực lượng dân quân trên biển.
+D. Có cơ chế chính sách thỏa đáng để ngư dân yên tâm bám biển, xây dựng hậu phương và các trận địa phòng thủ trên biển, đảo.
+Câu 14: Kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong công nghiệp sẽ làm cơ sở cho:
+A. Phát triển ngành sản xuất vũ khí.
+B. Phát triển công nghiệp quốc phòng.
+C. Phát triển sản xuất trang bị quốc phòng.
+D. Phát triển sản xuất thiết bị quốc phòng.
+Câu 15: Nội dung kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong công nghiệp là:
+A. Kết hợp ngay từ khi thực hiện xây dựng các khu công nghiệp tập trung, khu chế xuất.
+B. Kết hợp ngay từ khâu quy hoạch, bố trí các khu công nghiệp, khu chế xuất tập trung.
+C. Kết hợp ngay từ khâu quy hoạch bố trí các đơn vị kinh tế của ngành công nghiệp.
+D. Kết hợp ngay trong quy hoạch công nghiệp quốc phòng và xây dựng khu vực phòng thủ.
+Câu 16: Kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong giao thông vận tải cần phải:
+A. Tính đến khả năng bảo vệ khi địch đánh phá.
+B. Tính đến khả năng bảo đảm cho vận tải quân sự.
+C. Tính đến cả nhu cầu hoạt động thời bình và thời chiến.
+D. Tính đến khả năng cơ động cho phương tiện xe quân sự.
+Câu 17: Kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong bưu chính viễn thông cần phải:
+A. Kết hợp chặt chẽ giữa ngành bưu điện quốc gia với các ngành khác.
+B. Kết hợp chặt chẽ giữa phát triển các kênh thông tin quốc gia với các kênh liên lạc quốc tế.
+C. Kết hợp giữa ngành bưu điện quốc gia với ngành công nghiệp điện tử.
+D. Kết hợp giữa các ngành bưu điện quốc gia với ngành thông tin quân đội, công an. 
+Câu 18: Kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại trong khoa học, công nghệ và giáo dục cần phải:
+A. Phối hợp chặt chẽ, có hiệu quả nghiên cứu các đề tài khoa học quân sự với các dự án công nghệ và sản xuất các sản phẩm cho xã hội.
+B. Thực hiện tốt phát triển khoa học công nghệ với khoa học giáo dục quốc phòng và an ninh một cách hợp lý, cân đối và hài hòa.
+C. Phối kết hợp chặt chẽ và toàn diện hoạt động giữa các ngành khoa học và công nghệ then chốt của cả nước với các ngành khoa học của quốc phòng, an ninh.
+D. Thực hiện tốt chính sách ưu tiên cho cải cách, đổi mới cơ chế phát triển khoa học và nghệ thuật quân sự.
+Câu 19: Trong lĩnh vực y tế, việc kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh và đối ngoại cần thực hiện:
+A. Xây dựng mô hình nghiên cứu và ứng dụng khoa học chung cho cả quân và dân y.
+B. Tổ chức cho tất cả các cơ sở quân y thực hiện việc khám, chữa bệnh rộng rãi cho nhân dân.
+C. Tổ chức các đội y tế quân dân y ở cơ sở để phục vụ nhân dân khám, chữa bệnh.
+D. Xây dựng mô hình quân dân y kết hợp trên các địa bàn, đặc biệt là ở miền núi, biên giới, hải đảo.
+Câu 20: Sự phối hợp giữa hoạt động đối ngoại với kinh tế, quốc phòng, an ninh là:
+A. Nội dung cơ bản của chủ trương đối ngoại trong thời kỳ mới.
+B. Nội dung để hội nhập kinh tế quốc tế trong thời kỳ mới.
+C. Sự phối hợp một cách toàn diện phù hợp với xu thế toàn cầu hóa.
+D. Sự phối hợp chặt chẽ, đồng bộ của đất nước trong thời kỳ hội nhập quốc tế.
+Câu 21: Cơ sở lý luận của sự kết hợp kinh tế với quốc phòng, an ninh là:
+A. Kinh tế quyết định việc cung ứng vật chất cho quốc phòng, an ninh.
+B. Kinh tế quyết định việc cung cấp số lượng, chất lượng nguồn nhân lực cho quốc phòng, an ninh.
+C. Kinh tế quyết định đến nguồn gốc ra đời, sức mạnh của quốc phòng, an ninh.
+D. Kinh tế quyết định việc cung cấp kỹ thuật, công nghệ cho quốc phòng, an ninh.
+Câu 22: Một trong những cơ sở lý luận của sự kết hợp kinh tế và quốc phòng, an ninh là:
+A. Quốc phòng an ninh tạo ra cơ sở vật chất xây dựng kinh tế.
+B. Quốc phòng an ninh tạo ra những biến động kích thích kinh tế.
+C. Quốc phòng an ninh và kinh tế có quan hệ, tác động qua lại lẫn nhau.
+D. Quốc phòng an ninh phụ thuộc vào kinh tế.
+Câu 23: Nội dung kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng, an ninh là:
+A. Kết hợp trong chiến lược phát triển công nghiệp hóa hiện đại hóa. 
+B. Kết hợp trong chiến lược phát triển nguồn nhân lực để hiện đại hóa đất nước.
+C. Kết hợp trong xác định chiến lược phát triển kinh tế, xã hội.
+D. Kết hợp trong xác định chiến lược về văn hóa tư tưởng.
+BÀI 7: NHỮNG VẤN ĐỀ CƠ BẢN VỀ LỊCH SỬ NGHỆ THUẬT QUÂN SỰ VIỆT NAM
+Câu 1: Cuộc khởi nghĩa của Hai Bà Trưng vào năm:
+A. Năm 40 trước Công nguyên.
+B. Năm 140 sau Công nguyên.
+C. Năm 248 sau Công nguyên.
+D. Năm 40 sau Công nguyên.
+Câu 2: Lý Thường Kiệt lãnh đạo cuộc kháng chiến chống quân Tống xâm lược nước ta lần thứ hai:
+A. Năm 981 – 983.
+B. Năm 1075 – 1077.
+C. Năm 1070 – 1075.
+D. Năm 1076 – 1077.
+Câu 3: Ba lần kháng chiến chống quân xâm lược của nhà Trần vào các năm:
+A. 1258, 1285 và 1287 đến 1289.
+B. 1258, 1284 và 1287 đến 1288.
+C. 1258, 1286 và 1287 đến 1288.
+D. 1258, 1285 và 1287 đến 1288.
+Câu 4: Lý Thường Kiệt sử dụng biện pháp “Tiên phát chế nhân” nghĩa là:
+A. Chuẩn bị chu đáo, chặn đánh địch từ khi mới xâm lược.
+B. Chuẩn bị thế trận phòng thủ, chống địch làm địch bị động.
+C. Chuẩn bị đầy đủ vũ khí trang bị để giành thế chủ động đánh địch.
+D. Chủ động tiến công trước, đẩy kẻ thù vào thế bị động.
+Câu 5: Nghệ thuật đánh giặc độc đáo sáng tạo của ông cha ta là:
+A. Lấy nhỏ đánh lớn, lấy ít địch nhiều, lấy yếu thắng mạnh.
+B. Lấy nhỏ đánh lớn, lấy ít thắng nhiều, lấy yếu thắng mạnh.
+C. Lấy nhỏ đánh lớn, lấy ít địch nhiều, lấy yếu chống mạnh.
+D.Lấy nhỏ thắng lớn, lấy ít thắng nhiều, lấy yếu chống mạnh
+Câu 6: Đặc trưng của nghệ thuật quân sự Việt Nam là:
+A. Lấy kế thắng lực. 
+B. Lấy thế thắng lực.
+C. Lấy mưu thắng lực.
+D. Lấy ý chí thắng lực.
+Câu 7: Nghệ thuật đánh giặc của ông cha ta là:
+A. Kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao, binh vận.
+B. Kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao, dân vận.
+C. Kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại thương, dân vận.
+D. Kết hợp đấu tranh giữa các mặt trận quân sự, kinh tế, ngoại giao, binh vận.
+Câu 8: Tư tưởng tích cực chủ động tiến công được xem là sợi chỉ đỏ:
+A. Xuyên suốt trong quá trình tiến hành và khắc phục hậu quả chiến tranh.
+B. Xuyên suốt trong quá trình chuẩn bị và tiến hành chiến tranh.
+C. Xuyên suốt trong quá trình huấn luyện và đề ra các kế sách chiến tranh.
+D. Xuyên suốt trong quá trình đánh giá nghiên cứu về kẻ thù.
+Câu 9: Trong nghệ thuật kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao và binh vận thì mặt trận chính trị được xác định:
+A. Là mặt trận quan trọng nhất, chủ yếu nhất.
+B. Là mặt trận quyết định thắng lợi trực tiếp của chiến tranh.
+C. Là cơ sở để tạo ra sức mạnh về quân sự.
+D. Là mặt trận chủ yếu để phân hóa, cô lập kẻ thù.
+Câu 10: Cơ sở hình thành nghệ thuật quân sự Việt Nam là:
+A. Từ truyền thống đánh giặc của tổ tiên.
+B. Từ nghệ thuật quân sự của các nước. 
+C. Từ luận điểm về đấu tranh giai cấp của chủ nghĩa Mác - Lênin.
+D. Từ sự giúp đỡ của các nước trên thế giới.
+Câu 11: Nội dung chiến lược quân sự Việt Nam từ khi có Đảng lãnh đạo :
+A. Xác định đúng kẻ thù, đúng đối tượng tác chiến.
+B. Xác định đúng kẻ thù, đúng đối tác.
+C. Xác định đúng đối tượng, đúng đối tác.
+D. Xác định đúng lực lượng và đối tác của ta.
+Câu 12: Phương châm tiến hành chiến tranh của Đảng là:
+A.Tự lực cánh sinh và dựa vào bạn bè, đánh lâu dài.
+B. Toàn dân, toàn diện, lâu dài, tự lực cánh sinh.
+C. Tự lực cánh sinh, đánh nhanh, thắng nhanh, dựa vào sức mình là chính.
+D.Tự lực cánh sinh, đánh lâu dài, dựa vào sức mạnh thời đại.
+Câu 13: Phương thức tiến hành chiến tranh nhân dân thời chống Mỹ là: 
+A. Tấn công địch bằng 2 lực lượng, 3 mũi giáp công, 3 vùng chiến lược.
+B. Tấn công địch bằng 3 lực lượng, 2 mũi giáp công, 2 vùng chiến lược.
+C. Tấn công địch bằng 3 lực lượng, 4 mũi giáp công, 5 vùng chiến lược.
+D. Tấn công địch bằng 4 lực lượng, 3 mũi giáp công, 2 vùng chiến lược..
+Câu 14: Chiến dịch nào sau đây là chiến dịch phản công?
+A. Chiến dịch Điện Biên Phủ năm 1954. 
+B. Chiến dịch Việt Bắc - Thu Đông năm 1947.
+C. Chiến dịch Quảng Trị năm 1972.
+D. Chiến dịch Hồ Chí Minh năm 1975.
+Câu 15: Những chiến thuật thường vận dụng trong kháng chiến chống Pháp và chống Mỹ:
+A.Phản công, phòng ngự, tập kích. 
+B. Tập kích, phục kích, vận động tiến công.
+C. Phục kích, đánh úp.
+D.Phòng ngự, phục kích, phản kích.
+Câu 16: An Dương Vương thành lập nhà nước Âu Lạc, đã dời đô về đâu?
+A.Hoa Lư.
+B. Thăng Long.
+C. Cổ loa.
+D.Lam Sơn.
+Câu 17: Cuộc khởi nghĩa nào đã chấm dứt hơn một nghìn năm Bắc thuộc, mở ra một kỷ nguyên mới trong lịch sử dân tộc, kỷ nguyên độc lập, tự chủ?
+A.Khởi nghĩa của Hai Bà Trưng năm 40.
+B. Khởi nghĩa của Ngô Quyền năm 938.
+C. Khởi nghĩa của Lý Bôn năm 542.
+D.Khởi nghĩa của Mai Thúc Loan năm 722.
+Câu 18: Bài học kinh nghiệm về nghệ thuật quân sự được vận dụng vào sự nghiệp bảo vệ Tổ quốc trong thời kỳ mới là:
+A.Nghệ thuật quân sự chiến tranh toàn dân.
+B. Nghệ thuật quân sự đánh giặc toàn diện.
+C. Nghệ thuật quân sự toàn dân đánh giặc.
+D.Nghệ thuật quân sự cả nước đánh giặc.
+Câu 19: Trận đánh điển hình về kết hợp chặt chẽ hai hình thức tác chiến phòng ngự và phản công trên cả quy mô chiến lược và chiến dịch thời nhà Lý là:
+A.Trận tiến công Chi Lăng.
+B. Trận phòng ngự Như Nguyệt. 
+C. Trận tiến công Ngọc Hồi.
+D.Trận phòng ngự Bạch Đằng.
+Câu 20: Cuộc kháng chiến chống quân Minh do nhà Hồ lãnh đạo thất bại là do:
+A.Nhà Hồ quá thiên về tiến công, không lo phòng thủ.
+B. Nhà Hồ đã tích cực tiến công nhưng quân Minh quá mạnh.
+C. Nhà Hồ đã quá thiên về phòng thủ, không phát động được toàn dân đánh giặc.
+D.Nhà Hồ đã chủ quan, không đề phòng cẩn mật, không phản công kịp thời.
+Câu 21: Khởi nghĩa Tây sơn và các cuộc kháng chiến chống quân Xiêm, quân xâm lược Mãn thanh vào những năm:
+A.1784 – 1785, 1878 – 1879.
+B. 1784 – 1786, 1878 – 1879.
+C. 1784 – 1785, 1788 – 1789.
+D.1784 – 1786, 1788 – 1789.
+Câu 22: Nghệ thuật đánh giặc của ông cha ta là:
+A.Kết hợp đấu tranh giữa các mặt trận, các chiến trường và chính sách ngoại giao.
+B. Kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao và dân vận.
+C. Kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao và binh vận.
+D.Kết hợp đấu tranh giữa các mặt trận quân sự, kinh tế, ngoại thương và binh vận.
+Câu 23: Trong nghệ thuật kết hợp đấu tranh giữa các mặt trận quân sự, chính trị, ngoại giao và binh vận thì mặt trận quân sự được xác định:
+A. Là mặt trận quyết định sức mạnh chính trị tinh thần.
+B. Là mặt trận quyết định thắng lợi trực tiếp của chiến tranh.
+C. Là mặt trận chủ yếu để vận động làm tan rã hàng ngũ địch.
+D. Là mặt trận chủ yếu để phân hóa, cô lập kẻ thù.
+Câu 24: Trong chiến lược quân sự, Đảng chỉ đạo phương thức tiến hành chiến tranh là:
+A.Chiến tranh nhân dân địa phương với các binh đoàn chủ lực.
+B. Kết hợp tác chiến của bộ đội chủ lực với các hoạt động của địa phương.
+C. Chiến tranh nhân dân kết hợp giữa địa phương với các binh đoàn chủ lực.
+D.Kết hợp chiến tranh du kích địa phương với tác chiến của bộ đội chủ lực.
+BÀI 8: XÂY DỰNG VÀ BẢO VỆ CHỦ QUYỀN BIỂN, ĐẢO, BIÊN GIỚI QUỐC GIA TRONG TÌNH HÌNH MỚI
+Câu 1: Đường bờ biển Việt Nam dài khoảng bao nhiêu km?
+A.3620 km. 
+B. 3260 km.
+C. 3026 km.
+D.2630 km.
+Câu 2: Luật biển Việt Nam năm 2012: “Nội thủy là vùng nước tiếp giáp với bờ biển, ở ... và là bộ phận lãnh thổ của việt nam”.
+A. Phía trong đường cơ sở.
+B. Phía ngoài đường cơ sở.
+C. Phía trong đường biên giới quốc gia trên biển.
+D. Phía ngoài đường biên giới quốc gia trên biển.
+Câu 3: Căn cứ Luật biển Việt Nam năm 2012, chế độ pháp lý của vùng nội thủy là: 
+A. Nhà nước thực hiện chủ quyền hoàn toàn, tuyệt đối với nội thủy.
+B. Nhà nước thực hiện chủ quyền hoàn toàn, tuyệt đối và đầy đủ đối với nội thủy .
+C. Nhà nước thực hiện chủ quyền tuyệt đối trực tiếp và đầy đủ đối với nội thủy.
+D. Nhà nước thực hiện chủ quyền hoàn toàn, thống nhất và đầy đủ đối với nội thủy .
+Câu 4: Căn cứ Luật biển Việt Nam năm 2012, lãnh hải việt nam có chiều rộng bao nhiêu hải lý tính từ đường cơ sở ra phía biển? 
+A. 12 hải lý.
+B. 24 hải lý.
+C. 200 hải lý.
+D. 350 hải lý.
+Câu 5: Biên giới quốc gia trên biển là:
+A. Ranh giới bên trong của lãnh hải.
+B. Ranh giới bên ngoài của lãnh hải.
+C. Là đường chạy song song với đường cơ sở và cách đường cơ sở 15 hải lý.
+D. Là đường chạy song song với đường bờ biển và cách đường cơ sở 15 hải lý.
+Câu 6: “Nhà nước … đầy đủ và toàn vẹn đối với lãnh hải và vùng trời, đáy biển và lòng đất dưới đáy biển của lãnh hải”.
+A. Thực hiện quyền quyết định.
+B. Thực hiện chủ quyền.
+C. Xác định chủ quyền.
+D. Hoạch định và thực hiện.
+Câu 7: Căn cứ Luật biển Việt Nam năm 2012, vùng tiếp giáp lãnh hải là:
+A. Vùng biển nằm trong lãnh hải, có chiều rộng 15 hải lý tính từ ranh giới ngoài của lãnh hải.
+B. Vùng biển tiếp liền và nằm trên lãnh hải, có chiều rộng 24 hải lý tính từ ranh giới ngoài của lãnh hải. 
+C. Vùng biển tiếp liền và nằm ngoài lãnh hải, có chiều rộng 12 hải lý tính từ ranh giới ngoài của lãnh hải.
+D.Vùng biển nằm ngoài lãnh hải, có chiều rộng 50 hải lý tính từ ranh giới trong của lãnh hải.
+Câu 8: Hiện nay Việt Nam có bao nhiêu đơn vị hành chính cấp tỉnh, thành phố trực thuộc trung ương có đường bờ biển?
+A. 28 đơn vị hành chính.
+B. 26 đơn vị hành chính.
+C. 24 đơn vị hành chính.
+D.22 đơn vị hành chính.
+Câu 9: Luật biển Việt Nam năm 2012: “ Vùng đặc quyền kinh tế là vùng biển tiếp liền và nằm ngoài lãnh hải Việt Nam, hợp với lãnh hải thành một vùng biển có chiều rộng ....”
+A. 200 hải lý tính từ đường cơ sở
+B. 320 hải lý tính từ đường cơ sở
+C. 200 hải lý tính từ đường biên giới quốc gia trên biển.
+D. 320 hải lý tính từ đường biên giới quốc gia trên biển.
+Câu 10: Luật biển Việt Nam năm 2012: “ Thềm lục địa của Việt Nam là vùng đáy biển và lòng đất dưới đáy biển, tiếp liền và nằm ngoài lãnh hải Việt Nam, trên toàn bộ phần kéo dài tự nhiên của lãnh thổ đất liền, các đảo và quần đảo của Việt Nam cho đến ...”
+A. Mép trong của rìa lục địa.
+B. Mép ngoài của rìa lục địa.
+C. Mép ngoài của đường biên giới quốc gia trên biển.
+D. Đường biên giới quốc gia trên biển kéo ra 24 hải lý.
+Câu 11: Nội dung giải pháp “Tăng cường tiềm lực bảo vệ biển, đảo trên các lĩnh vực chính trị, kinh tế, xã hội, tư tưởng - văn hoá, khoa học giáo dục” là:
+A.Bảo đảm sự tôn trọng các quyền và lợi ích chính đáng của quốc gia trong Biển Đông, bảo vệ sự toàn vẹn các vùng biển đảo của Tổ quốc.
+B. Bảo vệ an ninh chính trị, trật tự, an toàn xã hội và văn hóa trên biển.
+C. Bồi dưỡng nhân lực, xây dựng tiềm lực khoa học - công nghệ biển.
+D.Xây dựng quân đội đáp ứng yêu cầu bảo vệ biển, đảo trong thời kỳ mới.
+Câu 12: 1 hải lý bằng bao nhiêu mét?
+A.1258 m.
+B. 1285 m.
+C. 1582 m.
+D.1852 m.
+Câu 13: Biên giới quốc gia là: 
+A.Đường và mặt thẳng đứng giới hạn bởi chủ quyền lãnh thổ quốc gia.
+B. Đường và mặt thẳng đứng đi qua đường đó để giới hạn biên giới quốc gia.
+C. Đường và mặt phẳng thẳng đứng theo đường đó để xác định biên giới quốc gia.
+D.Đường cụ thể được thể hiện trên bản đồ để giới hạn lãnh thổ quốc gia.
+Câu 14: Quan điểm của Đảng và Nhà nước ta về biên giới và quản lý, bảo vệ biên giới quốc gia là:
+A.Quản lý bảo vệ biên giới quốc gia là nhiệm vụ chung của toàn Đảng, toàn dân, của các cấp, các ngành.
+B. Quản lý, bảo vệ an ninh chính trị, trật tự, an toàn xã hội trên khu vực biên giới.
+C. Quản lý, bảo vệ công trình quốc phòng trên khu vực biên giới, các công trình bảo vệ biên giới.
+D.Quản lý, bảo vệ việc thực thi pháp luật, quy chế biên giới và các điều ước quốc tế về biên giới.
+Câu 15: Giải pháp, hình thức quản lý, bảo vệ biên giới quốc gia là:
+A.Quản lý, bảo vệ biên giới bình thường.
+B. Quản lý bảo vệ biên giới liên tục, xuyên suốt.
+C. Quản lý bảo vệ biên giới trước khi có chiến tranh.
+D.Quản lý bảo vệ biên giới bất ổn về chính trị.
+Câu 16: Điền từ còn thiếu: “Nhà nước ... đầy đủ và hoàn toàn đối với lãnh hải và vùng trời, đáy biển và lòng đất dưới đáy biển của lãnh hải”.
+A.Thực hiện quyền quyết định.
+B. Thực hiện chủ quyền.
+C. Xác định chủ quyền.
+D.Hoạch định và thực hiện. 
+Câu 17: Quan điểm của Đảng và Nhà nước về quốc gia, biên giới và quản lý, bảo vệ biên giới quốc gia là:
+A.Quản lý bảo vệ biên giới quốc gia là nhiệm vụ chung của toàn Đảng, toàn dân, của các cấp, các ngành.
+B. Quản lý, bảo vệ an ninh chính trị, trật tự, an toàn xã hội trên khu vực biên giới. 
+C. Quản lý, bảo vệ công trình quốc phòng trên khu vực biên giới, các công trình bảo vệ biên giới. 
+D.Quản lý, bảo vệ việc thực thi pháp luật, quy chế biên giới và các điều ước quốc tế về biên giới.
+Câu 18: Lãnh thổ quốc gia là:
+A.Phạm vi không gian được giới hạn bởi biên giới quốc gia.
+B. Phạm vi không gian của vùng đất, vùng trời và vùng biển quốc gia.
+C. Phạm vi giới hạn thuộc chủ quyền hoàn toàn và đầy đủ của quốc gia.
+D.Phạm vi giới hạn một phần của trái đất thuộc chủ quyền quốc gia.
+Câu 19: Lãnh thổ quốc gia bao gồm: 
+A.Vùng đất, vùng nước, vùng trời và các quần đảo.
+B. Vùng đất, vùng biển, vùng đặc quyền kinh tế và vùng nội thủy.
+C. Vùng đất, vùng biển, vùng trời và vùng lãnh thổ quốc gia đặc biệt.
+D.Vùng đất, lãnh hải, thềm lục địa và vùng trời.
+Câu 20: Biên giới quốc gia Việt Nam trên đất liền là đường phân định:
+A.Phạm vi vùng đất quốc gia Việt Nam với quốc gia khác.
+B. Ranh giới lãnh thổ quốc gia Việt Nam với quốc gia khác.
+C. Phạm vi lãnh thổ quốc gia Việt Nam với quốc gia khác.
+D.Lãnh thổ trên bề mặt đất liền của vùng đất quốc gia Việt Nam.
+Câu 21: Biên giới quốc gia Việt Nam bao gồm:
+A.Biên giới quốc gia trên đất liền, trên biển và trên lãnh thổ quốc gia đặc biệt.
+B. Biên giới quốc gia trên mặt đất, trong lòng đất, trên mặt biển và dưới lòng đất.
+C. Biên giới quốc gia trên đất liền, trên không, trên biển và trong lòng đất.
+D.Biên giới quốc gia trên đất liền, trên các đảo, các quần đảo và trong lòng đất.
+Câu 22: Chủ quyền quốc gia là:
+A.Quyền tối cao về lập pháp, hành pháp và tư pháp của một quốc gia.
+B. Quyền làm chủ thiêng liêng về chính trị, kinh tế, văn hóa – xã hội của quốc gia.
+C. Quyền làm chủ một cách độc lập, toàn vẹn và đầy đủ về lập pháp, hành pháp và tư pháp.
+D.Quyền làm chủ một cách độc lập, tự quyết định mọi vấn đề đối nội, đối ngoại của quốc gia.
+Câu 23: Chủ quyền lãnh thổ quốc gia là:
+A.Quyền tối cao, tuyệt đối, riêng biệt đối với quốc gia trên vùng lãnh thổ của mình.
+B. Quyền thiêng liêng bất khả xâm phạm, quyết định mọi vấn đề của quốc gia trên vùng lãnh thổ của mình.
+C. Một bộ phận của chủ quyền quốc gia, là quyền quyết định mọi vấn đề chính trị, kinh tế, văn hóa, xã hội.
+D.Một bộ phận của chủ quyền quốc gia, khẳng định quyền làm chủ của quốc gia đó trên vùng lãnh thổ của mình.
+Câu 24: Quan điểm của Đảng về xây dựng và bảo vệ chủ quyền lãnh thổ, biên giới quốc gia là:
+A.Chủ quyền lãnh thổ, biên giới quốc gia là một bộ phận rất quan trọng của cách mạng Việt Nam.
+B. Chủ quyền lãnh thổ, biên giới quốc gia là yếu tố cơ bản nhất cho sự nghiệp xây dựng và bảo vệ Tổ quốc.
+C. Chủ quyền lãnh thổ, biên giới quốc gia là thiêng liêng bất khả xâm phạm của dân tộc Việt Nam. 
+D.Chủ quyền lãnh thổ, biên giới quốc gia là nội dung chủ yếu trong sự nghiệp xây dựng và bảo vệ Tổ quốc.
+Câu 25: Huyện đảo Trường Sa thuộc tỉnh, thành phố nào của nước ta?
+A. Tỉnh Quảng Ngãi.
+B. Tỉnh Phú Yên.
+C. Tỉnh Khánh Hòa.
+D. Thành phố Bà Rịa – Vũng Tàu.
+Câu 26: Nội dung xây dựng và bảo vệ chủ quyền lãnh thổ quốc gia là:
+A.Xây dựng và phát triển tiềm lực kinh tế, chính trị, quốc phòng, an ninh của đất nước.
+B. Xây dựng và phát triển toàn diện nền kinh tế, kết hợp với tăng cường quốc phòng – an ninh của đất nước.
+C. Xây dựng và phát triển nền quốc phòng toàn dân, an ninh nhân dân của đất nước.
+D.Xây dựng và phát triển mọi mặt chính trị, kinh tế, văn hóa, xã hội, đối ngoại và quốc phòng, an ninh của đất nước.
+Câu 27: Bảo vệ chủ quyền lãnh thổ quốc gia là:
+A.Sử dụng các lực lượng và các biện pháp làm thất bại mọi âm mưu, thủ đoạn chống phá của kẻ thù để giữ gìn toàn vẹn lãnh thổ quốc gia.
+B. Sử dụng tổng hợp các lực lượng và biện pháp chống lại sự xâm phạm, phá hoại dưới mọi hình thức để giữ gìn toàn vẹn chủ quyền nhà nước đối với lãnh thổ quốc gia.
+C. Sử dụng tổng hợp các lực lượng vũ trang đánh bại mọi hành động phá hoại, xâm lược của kẻ thù để bảo vệ độc lập, chủ quyền, thống nhất toàn vẹn lãnh thổ.
+D.Sử dụng mọi lực lượng, phương tiện, đấu tranh toàn diện trên tất cả mọi lĩnh vực kinh tế, chính tri, quốc phòng, an ninh, đối ngoại để bảo vệ chủ quyền lãnh thổ quốc gia.
+Câu 28: Nội dung xây dựng và bảo vệ chủ quyền lãnh thổ quốc gia là:
+A.Xây dựng, phát triển mọi mặt nền quốc phòng toàn dân, an ninh nhân dân.
+B. Xây dựng, phát triển toàn diện nền kinh tế, kết hợp với tăng cường quốc phòng – an ninh.
+C. Xác lập và bảo vệ quyền lập pháp, hành pháp, tư pháp của Việt Nam trên mọi mặt.
+D.Kết hợp chặt chẽ giữa phát triển kinh tế với đấu tranh quân sự và bảo đảm an ninh chính trị.
+Câu 29: Làm tốt nhiệm vụ xây dựng và bảo vệ chủ quyền lãnh thổ quốc gia là:
+A.Thực hiện tốt hai nhiệm vụ chiến lược của cách mạng Việt Nam.
+B. Trực tiếp bảo vệ Tổ quốc, bảo vệ chế độ xã hội chủ nghĩa ở Việt Nam.
+C. Trực tiếp góp phần xây dựng và bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa.
+D.Thực hiện kết hợp phát triển kinh tế, xã hội với tăng cường quốc phòng – an ninh.
+Câu 30: Khu vực biên giới trên đất liền của Việt Nam gồm:
+A.Xã, phường, thị trấn tiếp giáp biên giới quốc gia trên đất liền. 
+B. Xã, phường, thị trấn có một phần địa giới hành chính trùng hợp với biên giới quốc gia trên đất liền.
+C. Khu vực thuộc các xã, phường, thị trấn có chiều rộng 10 km tính từ đường biên giới quốc gia trên đất liền.
+D.Khu vực các xã, phường, thị trấn nằm liền kề đường biên giới quốc gia trên đất liền.
+Câu 31: Xây dựng và bảo vệ biên giới quốc gia là:
+A.Thực hiện tổng thể các giải pháp một cách toàn diện trên tất cả các lĩnh vực của đời sống xã hội trên khu vực biên giới.
+B. Thực hiện tổng thể các chủ trương chính sách của Đảng, pháp luật của Nhà nước trên tất cả mọi lĩnh vực trên khu vực biên giới.
+C. Thực hiện tổng thể mọi hoạt động trên các lĩnh vực kinh tế, chính trị, văn hóa, xã hội, đối ngoại, quốc phòng, an ninh trên khu vực biên giới.
+D.Thực hiện tổng thể các biện pháp để bảo vệ chủ quyền lãnh thổ, bảo vệ tài nguyên, môi sinh, môi trường, lợi ích quốc gia trên khu vực biên giới.
+Câu 32: Biên giới quốc gia của Việt Nam là:
+A.Đường và mặt phẳng nằm ngang.
+B. Hệ thống các tọa độ được xác định.
+C. Đường và mặt phẳng thẳng đứng.
+D.Hệ thống các đường và mặt phẳng.
+Câu 33: Căn cứ Luật Biên giới quốc gia, “xây dựng, quản lý, bảo vệ biên giới quốc gia, khu vực biên giới” là:
+A.Sự nghiệp của toàn dân do Nhà nước thống nhất quản lý.
+B. Sự nghiệp của cả đất nước do Đảng lãnh đạo.
+C. Sự nghiệp của cả dân tộc do nhân dân làm chủ.
+D.Sự nghiệp của cả hệ thống chính trị do Nhà nước quản lý.
+Câu 34: Nội dung xây dựng và bảo vệ biên giới quốc gia là:
+A.Tăng cường hợp tác với các nước trên thế giới vì hòa bình, ổn định và phát triển.
+B. Tăng cường, mở rộng quan hệ đối ngoại các cấp trên khu vực biên giới.
+C. Tăng cường hợp tác phát triển kinh tế, quốc phòng, an ninh với các nước láng giềng.
+D.Tăng cường hợp tác chiến lược, ổn định lâu dài với các nước láng giềng.
+Câu 35: “ Xây dựng, quản lý, bảo vệ biên giới quốc gia, khu vực biên giới là sự nghiệp của toàn dân do Nhà nước thống nhất quản lý” được quy định trong bộ luật nào của nước ta?
+A.Luật Quốc phòng.
+B. Luật Biên giới.
+C. Luật Nghĩa vụ quân sự. 
+D.Luật Công An.
+Câu 36: “Giữ gìn an ninh chính trị, trật tự an toàn xã hội ở khu vực biên giới” là một trong những nội dung của:
+A.Xây dựng và bảo vệ chủ quyền lãnh thổ quốc gia.
+B. Xây dựng và bảo vệ biên giới quốc gia.
+C. Xây dựng và bảo vệ Tổ quốc.
+D.Xây dựng và bảo vệ nhân dân khu vực biên giới.
+Câu 37: Quan điểm xây dựng biên giới hòa bình hữu nghị, ổn định là:
+A.Vấn đề chiến lược lâu dài của cách mạng Việt Nam.
+B. Vấn đề sống còn của sự nghiệp công nghiệp hóa, hiện đại hóa đất nước.
+C. Vấn đề cốt lõi trong đường lối cách mạng Việt Nam.
+D.Vấn đề đặc biệt quan trọng của sự nghiệp xây dựng và bảo vệ Tổ quốc.
+Câu 38: Quan điểm của Đảng và Nhà nước ta trong giải quyết các vấn đề tranh chấp lãnh thổ, biên giới là:
+A.Thông qua đối thoại ngoại giao vừa hợp tác, vừa đấu tranh và đàm phán thương lượng hòa bình, bảo đảm lợi ích của nhau.
+B. Thông qua đàm phán hòa bình, tôn trọng độc lập, chủ quyền, toàn vẹn lãnh thổ và lợi ích chính đáng của nhau.
+C. Thông qua luật pháp quốc tế trên cơ sở thương lượng hòa bình, tôn trọng độc lập chủ quyền và lợi ích chính đáng của nhau.
+D.Thông qua thương lượng cấp nhà nước giữa các bên, bằng nhiều biện pháp ngoại giao thân thiện nhất là đàm phán hòa bình thông qua diễn đàn quốc tế.
+Câu 39: Việt Nam có đường biên giới quốc gia trên đất liền dài:
+A.4550 km.
+B. 4505 km.
+C. 5450 km.
+D.5405 km.
+Câu 40: Việt Nam có đường biên giới tiếp giáp với Trung Quốc dài:
+A.1530 km.
+B. 1503 km.
+C. 1305 km.
+D.1350 km.
+Câu 41: Việt Nam có đường biên giới tiếp giáp với Lào dài:
+A.2607 km.
+B. 2670 km. 
+C. 2067 km.
+D.2076 km.
+Câu 42: Việt Nam có đường biên giới tiếp giáp với Campuchia dài:
+A.1317 km.
+B. 1371 km.
+C. 1173 km.
+D.1137 km.
+BÀI 9: XÂY DỰNG LỰC LƯỢNG DÂN QUÂN TỰ VỆ, LỰC LƯỢNG DỰ BỊ ĐỘNG VIÊN VÀ ĐỘNG VIÊN CÔNG NGHIỆP QUỐC PHÒNG.
+Câu 1: Quan điểm, nguyên tắc xây dựng lực lượng dự bị động viên là:
+A. Bảo đảm số lượng đủ, chất lượng cao toàn diện, rộng khắp, sẵn sàng chiến đấu cao.
+B. Bảo đảm toàn diện nhưng có trọng điểm chủ yếu xây dựng chất lượng.
+C. Bảo đảm số lượng đủ, chất lượng cao, xây dựng toàn diện nhưng có trọng tâm, trọng điểm.
+D. Bảo đảm số lượng đông, chất lượng cao cho những đơn vị sẵn sàng chiến đấu.
+Câu 2: Phương châm huấn luyện đối với lực lượng dự bị động viên:
+A. Chất lượng, thiết thực, hiệu quả tập trung vào khoa học quân sự hiện đại.
+B. Cơ bản, thống nhất coi trọng khâu kỹ thuật tác chiến, phối hợp giữa các lực lượng.
+C. Chất lượng, thiết thực, hiệu quả, sát thực tế chiến đấu tại địa bàn.
+D. Chất lượng, thiết thực, hiệu quả, tập trung có trọng tâm, trọng điểm.
+Câu 3: Thẩm quyền quyết định và thông báo quyết định động viên công nghiệp quốc phòng do cấp nào quy định?
+A. Bộ Quốc phòng.
+B. Chủ tịch nước.
+C. Chủ tịch Quốc hội.
+D. Chính phủ.
+Câu 4: Thực hiện huấn luyện, diễn tập, kiểm tra đối với lực lượng dự bị động viên nhằm:
+A. Giúp nâng cao chất lượng đáp ứng yêu cầu sẵn sàng chiến đấu và chiến đấu.
+B. Giúp nâng cao chất lượng đáp ứng yêu cầu động viên tham gia mở rộng quân đội.
+C. Giúp nâng cao chất lượng đáp ứng yêu cầu động viên và tổng động viên khi có lệnh.
+D. Giúp lãnh đạo, chỉ huy nắm được thực trạng tổ chức, xây dựng lực lượng dự bị động viên.
+Câu 5: Căn cứ Luật Dân quân tự vệ 2019, lực lượng dân quân tự vệ được phân loại gồm:
+A. Dân quân tự vệ tại chỗ; Dân quân tự vệ cơ động.
+B. Dân quân thường trực; Dân quân tự vệ biển. 
+C. Dân quân tự vệ phòng không, pháo binh, trinh sát, thông tin, công binh, phòng hóa, y tế.
+D. Tất cả đều đúng.
+Câu 6: Dân quân tự vệ được xác định là lực lượng như thế nào trong nền quốc phòng toàn dân?
+A. Là lực lượng cơ bản trong xây dựng nền quốc phòng toàn dân.
+B. Là lực lượng nòng cốt trong xây dựng nền quốc phòng toàn dân.
+C. Là lực lượng xung kích trong xây dựng nền quốc phòng toàn dân.
+D. Là lực lượng quyết định trong xây dựng nền quốc phòng toàn dân và an ninh nhân dân.
+Câu 7: Lực lượng dân quân tự vệ đặt dưới sự chỉ đạo trực tiếp của:
+A. Bộ Quốc phòng.
+B. Cơ quan quân sự địa phương.
+C. Ủy ban nhân dân các cấp.
+D. Hội đồng nhân dân các cấp. 
+Câu 8: Lực lượng dân quân tự vệ đặt dưới sự chỉ huy thống nhất của:
+A. Bộ chỉ huy quân sự các cấp.
+B. Bộ Quốc phòng.
+C. Ủy ban nhân dân các cấp.
+D. Hội đồng nhân dân các cấp. 
+Câu 9: Nội dung của phương châm xây dựng dân quân tự vệ hiện nay:
+A. Chú trọng chất lượng chính trị. 
+B. Coi trọng chất lượng là chính.
+C. Tăng cường sức mạnh chiến đấu. 
+D. Xây dựng toàn diện.
+Câu 10: Dân quân tự vệ là:
+A. Lực lượng vũ trang quần chúng không thoát ly sản xuất, công tác.
+B. Lực lượng quần chúng được vũ trang sẵn sàng chiến đấu.
+C. Lực lượng vũ trang quần chúng bảo vệ và duy trì sản xuất, công tác.
+D. Lực lượng vũ trang quần chúng bảo vệ nền kinh tế và văn hóa.
+Câu 11: Nhiệm vụ của lực lượng dân quân tự vệ là:
+A. Học tập chính trị, quân sự, sẵn sàng chiến đấu bảo vệ nhân dân.
+B. Học tập chính trị, thường xuyên luyện tập và sẵn sàng chiến đấu.
+C. Học tập chính trị, pháp luật, huấn luyện quân sự và diễn tập.
+D. Học tập chính trị, quân sự và bảo vệ an ninh kinh tế, văn hóa.
+Câu 12: Đối tượng giáo dục chính trị, huấn luyện quân sự trong lực lượng dân quân tự vệ là: 
+A. Toàn thể cán bộ, chiến sĩ dân quân tự vệ.
+B. Toàn thể cán bộ dân quân tự vệ.
+C. Toàn thể chiến sĩ dân quân tự vệ.
+D. Toàn thể cán bộ, đảng viên dân quân tự vệ.
+Câu 13: Vị trí, vai trò của dân quân tự vệ là:
+A. Lực lượng nòng cốt trong bảo vệ sản xuất, đời sống nhân dân trong chiến tranh bảo vệ Tổ quốc.
+B. Lực lượng xung kích trong bảo vệ sản xuất, phòng chống, khắc phục hậu quả thiên tai, địch họa.
+C. Lực lượng nòng cốt sẵn sàng chiến đấu, phục vụ chiến đấu và bảo vệ nhân dân.
+D. Lực lượng nòng cốt trong phong trào toàn dân đánh giặc trong chiến tranh bảo vệ Tổ quốc.
+Câu 14: Quân nhân dự bị động viên được đăng ký, quản lý tại:
+A. Nơi công tác.
+B. Nơi cư trú.
+C. Đơn vị dự bị động viên.
+D. Nơi tập trung động viên.
+Câu 15: Độ tuổi của công dân Việt Nam tham gia lực lượng dân quân tự vệ trong thời bình là:
+A. Nam từ đủ 18 tuổi đến hết 45 tuổi, nữ từ đủ 18 tuổi đến hết 40 tuổi.
+B. Nam từ đủ 20 tuổi đến hết 45 tuổi, nữ từ đủ 18 tuổi đến hết 40 tuổi.
+C. Nam từ đủ 18 tuổi đến hết 50 tuổi, nữ từ đủ 20 tuổi đến hết 45 tuổi.
+D. Nam từ đủ 20 tuổi đến hết 45 tuổi, nữ từ đủ 20 tuổi đến hết 40 tuổi.
+Câu 16: Quan điểm, nguyên tắc xây dựng lực lượng dự bị động viên là:
+A. Phát huy sức mạnh của toàn dân trên tất cả các lĩnh vực hoạt động xã hội.
+B. Xây dựng lực lượng dự bị động viên hùng mạnh, sẵn sàng chiến đấu cao.
+C. Phát huy sức mạnh của các bộ, ngành và địa phương.
+D. Phát huy sức mạnh tổng hợp của cả hệ thống chính trị ở địa phương.
+Câu 17: Nhiệm vụ của lực lượng dân quân tự vệ cơ động là:
+A. Chiến đấu, tiêu diệt địch, đánh bại địch tiến công trên địa bàn địa phương.
+B. Chiến đấu, sẵn sàng chiến đấu trên địa bàn địa phương theo phương án.
+C. Chiến đấu, cơ động chiến đấu trên địa bàn địa phương theo kế hoạch.
+D. Chiến đấu, tiêu hao, tiêu diệt địch, chi viện cho lực lượng chiến đấu tại chỗ.
+Câu 18: “Phát huy sức mạnh tổng hợp trên địa bàn để xây dựng lực lượng dân quân tự vệ” là một trong những nội dung của:
+A. Biện pháp xây dựng lực lượng dân quân tự vệ.
+B. Nhiệm vụ xây dựng lực lượng dân quân tự vệ. 
+C. Vị trí vai trò quan trong xây dựng lực lượng dân quân tự vệ.
+D. Nội dung cơ bản xây dựng lực lượng dân quân tự vệ.
+Câu 19: “Bảo đảm số lượng đủ, chất lượng cao, xây dựng toàn diện nhưng có trọng tâm, trọng điểm” là một trong những nội dung của:
+A. Quan điểm, nguyên tắc xây dựng lực lượng dự bị động viên.
+B. Nhiệm vụ xây dựng lực lượng dự bị động viên.
+C. Biện pháp chủ yếu xây dựng lực lượng dự bị động viên.
+D. Giải pháp cơ bản xây dựng lực lượng dự bị động viên.
+Câu 20: Cơ quan thực hiện việc đăng ký, quản lý quân nhân dự bị động viên là:
+A. Ban lãnh đạo cơ quan, đơn vị công tác.
+B. Ban chỉ huy quân sự xã (phường, thị trấn), Ban chỉ huy đơn vị dự bị động viên.
+C. Ban chỉ huy quân sự xã (phường, thị trấn), Ban chỉ huy quân sự huyện (quận, thị xã, thành phố thuộc tỉnh).
+D. Ban chỉ huy quân sự huyện (quận, thị xã, thành phố thuộc tỉnh) và đơn vị dự bị động viên.
+Câu 21: Một trong những nguyên tắc sắp xếp quân nhân dự bị vào các đơn vị dự bị động viên là:
+A. Theo khả năng về sức khỏe, tuổi đời và nơi cư trú.
+B. Theo trình độ chuyên môn nghiệp vụ, theo nghề nghiệp.
+C. Theo trình độ kỹ thuật, chiến thuật, chức vụ và sức khỏe.
+D. Theo trình độ chuyên nghiệp quân sự, chuyên môn kỹ thuật.
+Câu 22: Việc bảo đảm vật chất, kinh phí xây dựng lực lượng dự bị động viên hàng năm do:
+A. Các bộ, ngành, địa phương phối hợp với các đơn vị dự bị động viên thực hiện.
+B. Chính phủ giao chỉ tiêu nhiệm vụ cụ thể cho các bộ, ngành, địa phương thực hiện.
+C. Các địa phương chủ động phối hợp với các đơn vị dự bị động viên thực hiện.
+D. Chính phủ giao chỉ tiêu cho các đơn vị dự bị động viên và địa phương thực hiện.
+Câu 23: Nội dung xây dựng lực lượng dự bị động viên là:
+A. Tạo nguồn, đăng ký, quản lý lực lượng dự bị động viên.
+B. Tạo nguồn, biên chế và đăng ký lực lượng dự bị động viên.
+C. Tạo nguồn, tổ chức và quản lý lực lượng dự bị động viên.
+D. Tạo nguồn, quản lý và kiểm tra lực lượng dự bị động viên.
+Câu 24: Phương tiện kỹ thuật của lực lượng dự bị động viên thường gồm:
+A. Phương tiện xếp dỡ, san lấp mặt bằng, cầu phà, thông tin liên lạc và một số phương tiện khác.
+B. Phương tiện thông tin liên lạc, y tế, phương tiện vận tải, cứu hỏa và một số phương tiện khác.
+C. Phương tiện vận tải, làm đường, xếp dỡ, thông tin liên lạc, y tế và một số phương tiện khác.
+D. Phương tiện vận tải, cầu đường, thông tin liên lạc và các thiết bị khoa học công nghệ. 
+Câu 25: Dân quân được tổ chức ở:
+A. Xã, phường, thị trấn, cơ quan nhà nước, đơn vị sự nghiệp.
+B. Xã, phường, thị trấn, cơ quan nhà nước.
+C. Xã, phường, thị trấn, đơn vị sự nghiệp.
+D. Xã, phường, thị trấn.
+Câu 26: Quân nhân dự bị gồm:
+A. Sỹ quan dự bị, quân nhân chuyên nghiệp dự bị.
+B. Hạ sỹ quan và binh sỹ dự bị.
+C. Sỹ quan dự bị, quân nhân chuyên nghiệp dự bị, hạ sỹ quan và binh sỹ dự bị.
+D. Tất cả quân nhân.
+BÀI 10: XÂY DỰNG PHONG TRÀO TOÀN DÂN BẢO VỆ AN NINH TỔ QUỐC
+Câu 1: Điền vào chỗ trống: “Huy động sức mạnh của nhân dân để …, phát hiện, ngăn chặn đấu tranh với các loại tội phạm, bảo vệ an ninh chính trị, giữ gìn trật tự an toàn xã hội”.
+A. Tăng cường.
+B. Phòng ngừa.
+C. Kịp thời.
+D. Chủ động.
+Câu 2: Đặc điểm của phong trào toàn dân bảo vệ an ninh Tổ quốc là:
+A. Diễn ra trên diện rộng, khắp mọi địa bàn, mọi lĩnh vực.
+B. Hình thức hoạt động tự giác của quần chúng nhân dân.
+C. Với mục đích bảo vệ an ninh chính trị, Đảng, Nhà nước và nhân dân.
+D. Cuộc đấu tranh mang tính đặc thù của công an nhân dân.
+Câu 3: Mục đích của phong trào toàn dân bảo vệ an ninh Tổ quốc là:
+A. Huy động sức mạnh của nhân dân để phòng ngừa, ngăn chặn các loại tội phạm.
+B. Huy động sức mạnh của nhân dân để đấu tranh hiệu quả với các loại tội phạm.
+C. Huy động sức mạnh của nhân dân để kịp thời phát hiện và trực tiếp đấu tranh với các loại tội phạm.
+D. Huy động sức mạnh của nhân dân để phòng ngừa, phát hiện, ngăn chặn, đấu tranh với các loại tội phạm. 
+Câu 4: Vị trí của phong trào toàn dân bảo vệ an ninh Tổ quốc là gì?
+A. Là phong trào mang tính tự giác để phát huy quyền làm chủ của nhân dân.
+B. Là động lực chính để thúc đẩy xã hội phát triển.
+C. Là một trong những biện pháp công tác cơ bản của công an nhân dân.
+D. Là hạt nhân của lực lượng công an nhân dân trong đấu tranh với các loại tội phạm.
+Câu 5: Phương pháp xây dựng phong trào toàn dân bảo vệ an ninh Tổ quốc là:
+A. Xây dựng tổ chức Đảng, chính quyền, đoàn thể quần chúng tại cơ sở vững mạnh.
+B. Xây dựng mở rộng liên kết, phối hợp giữa các ban, ngành, đoàn thể.
+C. Nắm tình hình và xây dựng kế hoạch phát động phong trào toàn dân bảo vệ an ninh Tổ quốc.
+D. Nắm tình hình và vận động toàn dân tích cực tham gia phong trào bảo vệ an ninh trật tự, an toàn xã hội.
+Câu 6: Nội dung yêu cầu xây dựng các tổ chức quần chúng nòng cốt làm nhiệm vụ bảo vệ an ninh trật tự là:
+A. Phải kiểm tra lý lịch rõ ràng, đủ điều kiện sức khỏe để thực hiện tốt nhiệm vụ.
+B. Lựa chọn người có khả năng tổ chức, điều hành, bản thân tự giác, tự nguyện, hoàn thành các thủ tục báo cáo nhiệm vụ được giao.
+C. Tuyển chọn đủ số lượng, chất lượng, phẩm chất đạo đức tốt.
+D. Xác định rõ chức năng, nhiệm vụ, quyền hạn của tổ chức được xây dựng.
+Câu 7: Nội dung cơ bản của công tác xây dựng phong trào toàn dân bảo vệ an ninh Tổ quốc là:
+A. Vận động toàn dân nâng cao tinh thần cảnh giác cách mạng trong nhiệm vụ bảo vệ Tổ quốc.
+B. Vận động toàn dân tích cực tham gia chương trình quốc gia phòng chống tội phạm.
+C. Kết hợp chặt chẽ giữa quốc phòng với an ninh ở địa phương, đơn vị.
+D. Kết hợp chặt chẽ giữa phát triển kinh tế xã hội với bài trừ tệ nạn xã hội.
+Câu 8: Việc kết hợp và lồng ghép nội dung của phong trào bảo vệ an ninh Tổ quốc với các phong trào khác ở địa phương nhằm mục đích gì?
+A. Tạo sự phong phú cho phong trào.
+B. Tăng cường mối quan hệ khăng khít, hỗ trợ lẫn nhau giữa các phong trào.
+C. Duy trì và thúc đẩy phong trào.
+D. Để phong trào khác đạt hiệu quả như phong trào bảo vệ an ninh Tổ quốc.
+Câu 9: “Vận động toàn dân tích cực tham gia chương trình quốc gia phòng chống tội phạm” là một trong những nội dung cơ bản của:
+A. Công tác vận động quần chúng nâng cao tinh thần cảnh giác cách mạng.
+B. Công tác xây dựng phong trào toàn dân bảo vệ an ninh Tổ quốc.
+C. Công tác tuyên truyền của lực lượng công an nhân dân.
+D. Công tác vận động quần chúng của các cấp, các ngành. 
+Câu 10: Bảo vệ bí mật nhà nước là nội dung của:
+A. Bảo vệ an ninh chính trị.
+B. Bảo vệ an ninh kinh tế.
+C. Bảo vệ an ninh tư tưởng văn hóa.
+D. Bảo vệ an ninh trên lĩnh vực quốc phòng an ninh đối ngoại.
+BÀI 11: NHỮNG VẤN ĐỀ CƠ BẢN VỀ BẢO VỆ AN NINH QUỐC GIA VÀ BẢO ĐẢM TRẬT TỰ AN TOÀN XÃ HỘI
+Câu 1: Bảo vệ an ninh quốc gia là:
+A. Phòng ngừa, phát hiện, ngăn chặn, đấu tranh làm thất bại các hoạt động xâm hại an ninh quốc gia.
+B. Phòng ngừa, phát hiện, ngăn chặn đấu tranh các hành động gây rối của kẻ thù.
+C. Bảo vệ bí mật Nhà nước và các mục tiêu quan trọng về an ninh quốc gia.
+D. Bảo vệ các công trình, cơ sở chính trị, an ninh, quốc phòng, kinh tế khoa học công nghệ của Nhà nước.
+Câu 2: Nội dung bảo vệ an ninh quốc gia gồm:
+A. Bảo vệ an ninh: Chính trị nội bộ, kinh tế, văn hoá, tư tưởng, dân tộc, tôn giáo, lãnh thổ, biên giới, thông tin, quốc phòng an ninh và đối ngoại.
+B. Bảo vệ an ninh: Chính trị nội bộ, an ninh kinh tế, Đảng, Nhà nước, nhân dân.
+C. Bảo vệ an ninh: Kinh tế, văn hoá - tư tưởng, dân tộc và sự nghiệp công nghiệp hoá, hiện đại hoá.
+D. Bảo vệ an ninh: Kinh tế, tôn giáo, dân tộc và nền văn hoá tiên tiến đậm đà bản sắc dân tộc.
+Câu 3: Nội dung bảo đảm trật tự an toàn xã hội là:
+A. Bảo vệ an ninh thông tin.
+B. Bảo vệ môi trường.
+C. Bảo vệ nền kinh tế thị trường nhiều thành phần.
+D. Bảo vệ nền văn hoá.
+Câu 4: Hiện nay Việt Nam khẳng định đối tác là:
+A. Những ai chủ trương tôn trọng độc lập, chủ quyền và hợp tác bình đẳng cùng có lợi với Việt Nam.
+B. Những quốc gia, vùng lãnh thổ, các tổ chức phi Chính phủ tạo điều kiện thuận lợi cho Việt Nam.
+C. Những nước xã hội chủ nghĩa và các nước đang phát triển giúp đỡ Việt Nam.
+D. Những tổ chức, cá nhân tôn trọng giúp đỡ Việt Nam.
+Câu 5: Quan điểm của Đảng về bảo vệ an ninh quốc gia, bảo đảm trật tự, an toàn xã hội là:
+A. Đảng lãnh đạo trực tiếp, tuyệt đối về mọi mặt bảo vệ an ninh quốc gia.
+B. Công an là lực lượng nòng cốt, tăng cường hiệu lực quản lý của Nhà nước.
+C. Kết hợp chặt chẽ nhiệm vụ xây dựng với nhiệm vụ bảo vệ Tổ quốc.
+D. Phát huy quyền làm chủ của nhân dân trên lĩnh vực bảo vệ an ninh quốc gia, bảo đảm trật tự an toàn xã hội.
+Câu 6: Căn cứ Luật an ninh quốc gia năm 2004, quyền và nghĩa vụ của công dân trong bảo vệ an ninh quốc gia là:
+A. Tham gia lực lượng bảo vệ an ninh quốc gia và thực hiện nhiệm vụ bảo vệ an ninh quốc gia theo quy định của pháp luật.
+B. Mọi công dân có nghĩa vụ tích cực tham gia đấu tranh phòng ngừa và chống tội phạm.
+C. Hoạt động bảo vệ an ninh quốc gia có thành tích khen thưởng.
+D. Là sự nghiệp toàn dân, cơ quan tổ chức, công dân trách nhiệm theo pháp luật.
+Câu 7: Lực lượng nòng cốt trong sự nghiệp bảo vệ an ninh quốc gia và bảo đảm trật tự, an toàn xã hội là:
+A. Công an.
+B. Các đơn vị sự nghiệp.
+C. Dân quân Tự vệ.
+D. Toàn dân.
+Câu 8: Để bảo đảm thắng lợi hoàn toàn và triệt để trong cuộc đấu tranh bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội, lực lượng công an phải:
+A. Kết hợp sức mạnh của quần chúng với công tác nghiệp vụ của các cơ quan chuyên môn thuộc công an nhân dân
+B. Kết hợp tai, mắt của quần chúng nhân dân với công tác nghiệp vụ của các cơ quan chuyên môn công an nhân dân
+C. Kết hợp phong trào toàn dân bảo vệ an ninh Tổ quốc với công tác nghiệp vụ của các cơ quan chuyên môn
+D. Kết hợp tính tự giác cách mạng của quần chúng với công tác nghiệp vụ của các cơ quan chuyên môn
+Câu 9: Mối quan hệ giữa bảo vệ an ninh quốc gia và giữ gìn trật tự, an toàn xã hội là:
+A. An ninh quốc gia hoạt động độc lập, không có liên quan đến công tác giữ gìn trật tự, an toàn xã hội
+B. Trật tự an toàn xã hội được giữ vững sẽ tạo điều kiện cho an ninh quốc gia càng được củng cố vững chắc 
+C. An ninh quốc gia quyết định trực tiếp và lâu dài đến công tác giữ gìn trật tự an toàn xã hội
+D. Trật tự an toàn xã hội chi phối trực tiếp cả trước mắt và lâu dài đến công tác bảo vệ an ninh quốc gia
+Câu 10: “Bảo vệ an ninh quốc gia phải kết hợp chặt chẽ với giữ gìn trật tự, an toàn xã hội” là một trong những nội dung của:
+A. Giải pháp bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+B. Nhiệm vụ bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+C. Quan điểm bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+D. Biện pháp bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+Câu 11: “Đảng lãnh đạo trực tiếp về mọi mặt là nhân tố quyết định thắng lợi của cuộc đấu tranh bảo vệ an ninh quốc gia và giữ gìn trật tự an toàn xã hội” là một trong những nội dung thể hiện:
+A. Quan điểm bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+B. Nhiệm vụ bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+C. Tính chất bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+D. Biện pháp bảo vệ an ninh quốc gia, giữ gìn trật tự, an toàn xã hội
+Câu 12: Vai trò lãnh đạo của Đảng ta về bảo vệ an ninh quốc gia, trật tự, an toàn xã hội là:
+A. Đảng lãnh đạo trực tiếp, tuyệt đối về mọi mặt
+B. Đảng đề ra đường lối và giao cho Nhà nước thực hiện
+C. Đảng trực tiếp chỉ đạo Nhà nước và toàn xã hội thực hiện
+D. Đảng xác định đường lối, chính sách và chỉ đạo cả nước thực hiện 
+    </textarea>
+
+    <!-- CORE LOGIC & ENGINE -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            try {
+                // Bộ nhớ TỰ ĐỘNG CHẤM ĐIỂM (Cập nhật 258 đáp án chuẩn xác nhất)
+                const answerKeys = [
+                    "ABDADA", // Bài 1
+                    "ACDCCAAABCCCBCCBCDBCACDBCAAACB", // Bài 2
+                    "BADDCDACBBABCAABACBABCBACA", // Bài 3
+                    "BDCCCDBDCBCACAACACCCCDBAACBACDCDAAAD", // Bài 4
+                    "DACCCBDBCCBCADBDAABBBDC", // Bài 5
+                    "ADABDAACBDBDDBACAADACCA", // Bài 6
+                    "DDDDACBBCAABABBCBCBCDCBB", // Bài 7
+                    "BABABBBAABCDBABBAAAACDACCDBCCADCACBBABACCD", // Bài 8
+                    "CCDADBCADACAABABCACADBACAC", // Bài 9
+                    "BBDCABABBA", // Bài 10
+                    "AADAAAAABCAA" // Bài 11
+                ];
+
+                let rawText = document.getElementById("raw-data").value;
+                const lessonBlocks = rawText.split(/(?=BÀI \d+:)/g).filter(s => s.trim().length > 10);
+                
+                // Parse dữ liệu
+                const parsedData = lessonBlocks.map((lessonStr, lessonIndex) => {
+                    const lines = lessonStr.split('\n').filter(l => l.trim());
+                    const title = lines[0].trim();
+                    const contentText = lessonStr.substring(lessonStr.indexOf('\n')).trim();
+                    const questionBlocks = contentText.split(/(?=Câu \d+:)/g).filter(s => s.trim().length > 10);
+                    
+                    const parsedQuestions = questionBlocks.map((qStr, qIndex) => {
+                        const parts = qStr.split(/\s+(?=[A-D]\.\s)/g);
+                        const questionText = parts[0].trim();
+                        
+                        let options = [];
+                        let correctIndex = -1;
+                        
+                        // Đối chiếu thuật toán để tìm ra vị trí đáp án đúng
+                        const correctLetter = answerKeys[lessonIndex] ? answerKeys[lessonIndex][qIndex] : null;
+
+                        parts.slice(1).forEach((opt, idx) => {
+                            let text = opt.trim();
+                            let prefix = text.substring(0, 1).toUpperCase(); 
+                            if (correctLetter && prefix === correctLetter) correctIndex = idx;
+                            options.push(text);
+                        });
+
+                        return { question: questionText, options: options, correctIndex: correctIndex };
+                    });
+
+                    return { title, questions: parsedQuestions };
+                });
+
+                // Các Element HTML
+                const lessonListEl = document.getElementById("lesson-list");
+                const quizContainerEl = document.getElementById("quiz-container");
+                const currentLessonTitleEl = document.getElementById("current-lesson-title");
+                const questionCountEl = document.getElementById("question-count");
+                const scoreDisplayEl = document.getElementById("score-display");
+                
+                // Menu Mobile Event Listeners
+                const sidebar = document.getElementById("sidebar");
+                const menuBtn = document.getElementById("menu-btn");
+                const closeMenuBtn = document.getElementById("close-menu-btn");
+                const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+                function toggleMenu() {
+                    sidebar.classList.toggle("hidden");
+                    sidebar.classList.toggle("flex");
+                    sidebarOverlay.classList.toggle("hidden");
+                }
+                menuBtn.addEventListener("click", toggleMenu);
+                closeMenuBtn.addEventListener("click", toggleMenu);
+                sidebarOverlay.addEventListener("click", toggleMenu);
+
+                // Khởi tạo Sidebar
+                function renderLessons() {
+                    lessonListEl.innerHTML = "";
+                    parsedData.forEach((lesson, index) => {
+                        const btn = document.createElement("button");
+                        btn.className = "w-full text-left px-4 py-3 md:py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-transparent";
+                        
+                        const shortTitleMatch = lesson.title.match(/(BÀI \d+)/i);
+                        const shortTitle = shortTitleMatch ? shortTitleMatch[0] : `Phần ${index + 1}`;
+                        
+                        btn.innerHTML = `<i class="fas fa-layer-group text-slate-400 mr-2 w-5 text-center"></i> ${shortTitle}`;
+                        btn.onclick = () => {
+                            loadLesson(index, btn);
+                            if (window.innerWidth < 768) toggleMenu();
+                        };
+                        lessonListEl.appendChild(btn);
+                    });
+                    
+                    if (parsedData.length > 0) loadLesson(0, lessonListEl.firstChild);
+                }
+
+                let scoreCorrect = 0;
+                let scoreTotal = 0;
+
+                function updateScoreboard() {
+                    scoreDisplayEl.innerHTML = `<i class="fas fa-check-double mr-1.5 md:mr-2"></i> Đúng: ${scoreCorrect} / ${scoreTotal}`;
+                }
+
+                // Load nội dung 1 Bài Học
+                function loadLesson(index, btnElement) {
+                    document.querySelectorAll("#lesson-list button").forEach(btn => {
+                        btn.classList.remove("bg-blue-50", "text-blue-700", "border-blue-100");
+                        if(btn.querySelector("i")) btn.querySelector("i").classList.replace("text-blue-600", "text-slate-400");
+                    });
+                    
+                    if (btnElement) {
+                        btnElement.classList.add("bg-blue-50", "text-blue-700", "border-blue-100");
+                        if(btnElement.querySelector("i")) btnElement.querySelector("i").classList.replace("text-slate-400", "text-blue-600");
+                    }
+
+                    const lesson = parsedData[index];
+                    currentLessonTitleEl.textContent = lesson.title;
+                    questionCountEl.innerHTML = `<i class="fas fa-list-ol mr-2"></i> ${lesson.questions.length} Câu`;
+                    scoreCorrect = 0;
+                    scoreTotal = 0;
+                    updateScoreboard();
+
+                    quizContainerEl.innerHTML = "";
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "max-w-4xl mx-auto space-y-6 pb-20";
+
+                    lesson.questions.forEach((q, qIndex) => {
+                        const card = document.createElement("div");
+                        card.className = "bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:p-7";
+
+                        const qTitle = document.createElement("h3");
+                        qTitle.className = "text-base md:text-lg font-bold text-slate-800 mb-5 leading-relaxed";
+                        qTitle.textContent = q.question;
+                        card.appendChild(qTitle);
+
+                        const optionsContainer = document.createElement("div");
+                        optionsContainer.className = "space-y-3";
+                        optionsContainer.dataset.answered = "false";
+
+                        q.options.forEach((optText, optIndex) => {
+                            const optBtn = document.createElement("button");
+                            optBtn.className = "option-btn w-full text-left px-4 md:px-5 py-3 rounded-lg border-2 border-slate-100 text-sm md:text-base text-slate-700 bg-white focus:outline-none flex justify-between items-center";
+                            
+                            let prefix = optText.substring(0, 2); 
+                            let content = optText.substring(2);
+                            
+                            optBtn.innerHTML = `<span><span class="font-extrabold mr-2 text-slate-400">${prefix}</span> <span class="font-medium">${content}</span></span><i class="status-icon text-xl hidden"></i>`;
+                            
+                            optBtn.onclick = () => {
+                                if (optionsContainer.dataset.answered === "true") return;
+                                optionsContainer.dataset.answered = "true";
+                                
+                                scoreTotal++;
+
+                                if (optIndex === q.correctIndex) {
+                                    scoreCorrect++;
+                                    optBtn.classList.add("answered", "border-green-500", "bg-green-50", "text-green-800");
+                                    optBtn.classList.remove("border-slate-100", "bg-white", "text-slate-700");
+                                    
+                                    let icon = optBtn.querySelector('.status-icon');
+                                    icon.classList.remove("hidden");
+                                    icon.classList.add("fas", "fa-check-circle", "text-green-500");
+                                } else {
+                                    optBtn.classList.add("answered", "border-red-500", "bg-red-50", "text-red-800");
+                                    optBtn.classList.remove("border-slate-100", "bg-white", "text-slate-700");
+                                    
+                                    let icon = optBtn.querySelector('.status-icon');
+                                    icon.classList.remove("hidden");
+                                    icon.classList.add("fas", "fa-times-circle", "text-red-500");
+                                    
+                                    // Tự động đánh dấu xanh cho câu đúng thực sự
+                                    if(q.correctIndex !== -1) {
+                                        const correctBtn = optionsContainer.children[q.correctIndex];
+                                        correctBtn.classList.add("border-green-500", "bg-green-50", "text-green-800");
+                                        correctBtn.classList.remove("border-slate-100", "bg-white", "text-slate-700");
+                                        let correctIcon = correctBtn.querySelector('.status-icon');
+                                        correctIcon.classList.remove("hidden");
+                                        correctIcon.classList.add("fas", "fa-check-circle", "text-green-500");
+                                    }
+                                }
+
+                                updateScoreboard();
+                            };
+                            optionsContainer.appendChild(optBtn);
+                        });
+
+                        card.appendChild(optionsContainer);
+                        wrapper.appendChild(card);
+                    });
+
+                    quizContainerEl.appendChild(wrapper);
+                    quizContainerEl.scrollTop = 0;
+                }
+
+                renderLessons();
+
+            } catch (error) {
+                document.getElementById("quiz-container").innerHTML = `<div class="text-center text-red-500 mt-10 p-5 bg-red-50 rounded-lg"><b>Đã xảy ra lỗi khởi tạo:</b><br/>${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
